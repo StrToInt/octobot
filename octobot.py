@@ -7,28 +7,43 @@ import requests
 import json
 import math
 from dataclasses import dataclass
+import subprocess
+from datetime import datetime, timedelta
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import ParseMode
 from aiogram.utils.callback_data import CallbackData
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('broadcast')
 
-#config
-config = configparser.ConfigParser()
-config.read('config.ini')
-token = config.get("main", "token")
-key = config.get("main", "key")
-admin = config.get("main", "admin")
-octoprint = config.get("main", "octoprint")
+#config++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-bot = Bot(token=token)
+@dataclass
+class octobot_config:
+    token: str
+    key: str
+    admin: str
+    octoprint: str
+config_file = configparser.ConfigParser()
+config_file.read('config.ini')
+
+config = octobot_config(token = config_file.get("main", "token"),
+                        key = config_file.get("main", "key"),
+                        admin = config_file.get("main", "admin"),
+                        octoprint = config_file.get("main", "octoprint"))
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+bot = Bot(token=config.token)
 dp = Dispatcher(bot)
+
+last_printer_state = 'Closed'
 
 command_cb = CallbackData('id','action')  # post:<id>:<action>
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
 @dataclass
 class Printer_Connection:
@@ -46,7 +61,7 @@ class Printer_State:
 def get_printer_connection_status():
     status = Printer_Connection()
     try:
-        r = requests.get(url = octoprint+'/api/connection', headers = {'X-Api-Key':key})
+        r = requests.get(url = config.octoprint+'/api/connection', headers = {'X-Api-Key':config.key})
         if r.status_code == 200:
             json_data = json.loads(r.text)
             status.state = json_data['current']['state']
@@ -63,7 +78,7 @@ def get_printer_connection_status():
 def get_printer_state():
     state = Printer_State()
     try:
-        r = requests.get(url = octoprint+'/api/printer', headers = {'X-Api-Key':key})
+        r = requests.get(url = config.octoprint+'/api/printer', headers = {'X-Api-Key':config.key})
         if r.status_code == 200:
             state.data = json.loads(r.text)
             state.success = True
@@ -79,9 +94,13 @@ def get_printer_state():
 def get_printer_job_state():
     job_state = Printer_State()
     try:
-        r = requests.get(url = octoprint+'/api/job', headers = {'X-Api-Key':key})
+        r = requests.get(url = config.octoprint+'/api/job', headers = {'X-Api-Key':config.key})
         if r.status_code == 200:
             job_state.data = json.loads(r.text)
+            if job_state.data['progress']['printTime'] == None:
+                job_state.data['progress']['printTime'] = -1
+            if job_state.data['progress']['printTimeLeft'] == None:
+                job_state.data['progress']['printTimeLeft'] = -1
             job_state.success = True
         else:
             job_state.errorCode = str(r.status_code)
@@ -95,9 +114,11 @@ def get_printer_job_state():
 
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def make_photo():
+    subprocess.call("bash photo.sh", shell=True)
 
 def check_user(user_id):
-    if str(user_id) == admin:
+    if str(user_id) == config.admin:
         return True
     else:
         return False
@@ -108,6 +129,8 @@ def get_main_keyboard():
         types.InlineKeyboardButton('Photo', callback_data=command_cb.new(action='photo')),
     )
 
+def user_friendly_seconds(n):
+    return str(timedelta(seconds = n))
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #command /start. show all menus
@@ -144,11 +167,13 @@ async def callback_status_command(query: types.CallbackQuery, callback_data: typ
                         msg += 'Принтер печатает\n'
                         if job_state.success:
                             msg += 'Файл: '+job_state.data['job']['file']['name']
-                            msg += '\nПримерное время печати: '+str(round(job_state.data['job']['estimatedPrintTime'],2))
-                            msg += '\nИзрасходуется: '+str(round(job_state.data['job']['filament']['tool0']['length'],2))+' мм / '+str(round(job_state.data['job']['filament']['tool0']['volume'],2))+' см³'
+                            if job_state.data['job']['filament'] != None:
+                                msg += '\nИзрасходуется: '+str(round(job_state.data['job']['filament']['tool0']['length'],2))+' мм / '+str(round(job_state.data['job']['filament']['tool0']['volume'],2))+' см³'
                             msg += '\nПрогресс: '+str(round(job_state.data['progress']['completion'],2))+' %'
-                            msg += '\nВремя печати: '+str(job_state.data['progress']['printTime'])+' с'
-                            msg += '\nОсталось: '+str(job_state.data['progress']['printTimeLeft'])+' с'
+                            msg += '\nВремя печати: '+user_friendly_seconds(job_state.data['progress']['printTime'])
+                            msg += '\nОсталось: '+user_friendly_seconds(job_state.data['progress']['printTimeLeft'])
+                            time_end = datetime.now() + timedelta(seconds = job_state.data['progress']['printTimeLeft'])
+                            msg += '\nЗакончится: '+time_end.strftime('%d-%m-%Y %H:%M')
                         else:
                             msg += 'Ошибка получения данных о печати'
 
@@ -160,7 +185,15 @@ async def callback_status_command(query: types.CallbackQuery, callback_data: typ
             await bot.send_message(query.message.chat.id, 'Ошибка получения статуса!\n Код ответа: '+connection_status.errorCode)
         else:
             await bot.send_message(query.message.chat.id, 'Подключение к OCTOPRINT не удалось')
+        try:
+            make_photo()
+            with open('photoaf.jpg', 'rb') as photo:
+                await query.message.answer_photo(photo)
+        except Exception:
+            await bot.send_message(query.message.chat.id, 'Не удалось получить фото')
+
 
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
+
