@@ -10,6 +10,7 @@ import re
 from dataclasses import dataclass
 import subprocess
 from datetime import datetime, timedelta
+from threading import Thread
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import ParseMode
@@ -164,6 +165,9 @@ def get_show_keyboard_button():
 def user_friendly_seconds(n):
     return str(timedelta(seconds = n))
 
+def str_round(number):
+    return str(round(number,2))
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #command /start. show all menus
 @dp.message_handler(commands=['start'])
@@ -190,6 +194,12 @@ async def callback_status_command(query: types.CallbackQuery, callback_data: typ
                 msg += '✅ Принтер включен\n'
                 printer_state = get_printer_state()
                 if printer_state.success:
+                    msg += '🔥Стол: ' + str_round(printer_state.data['temperature']['bed']['actual'])+'° / '+\
+                                        str_round(printer_state.data['temperature']['bed']['target'])+'°, Δ'+\
+                                        str_round(printer_state.data['temperature']['bed']['offset'])+'°'+'\n'
+                    msg += '🔥Экструдер: '+ str_round(printer_state.data['temperature']['tool0']['actual'])+'° / '+\
+                                            str_round(printer_state.data['temperature']['tool0']['target'])+'°?, Δ'+\
+                                            str_round(printer_state.data['temperature']['tool0']['offset'])+'°'+'\n'
                     if ( (printer_state.data['state']['flags']['printing'] == True) or
                     (printer_state.data['state']['flags']['pausing'] == True) or
                     (printer_state.data['state']['flags']['paused'] == True) or
@@ -238,7 +248,7 @@ async def callback_photo_command(query: types.CallbackQuery, callback_data: typi
         await query.answer("получение фото...")  # don't forget to answer callback query as soon as possible\
         try:
             make_photo()
-            with open('photoaf.jpg', 'rb') as photo:
+            with open('photo.jpg', 'rb') as photo:
                 await query.message.answer_photo(photo, reply_markup=get_show_keyboard_button())
         except Exception:
             await bot.send_message(query.message.chat.id, '🆘Не удалось получить фото', reply_markup=get_show_keyboard_button())
