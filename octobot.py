@@ -6,6 +6,7 @@ import configparser
 import requests
 import json
 import math
+import re
 from dataclasses import dataclass
 import subprocess
 from datetime import datetime, timedelta
@@ -25,13 +26,16 @@ class octobot_config:
     key: str
     admin: str
     octoprint: str
+    filesdir: str
+
 config_file = configparser.ConfigParser()
 config_file.read('config.ini')
 
 config = octobot_config(token = config_file.get("main", "token"),
                         key = config_file.get("main", "key"),
                         admin = config_file.get("main", "admin"),
-                        octoprint = config_file.get("main", "octoprint"))
+                        octoprint = config_file.get("main", "octoprint"),
+                        filesdir = config_file.get("main", "filesdir"))
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -39,6 +43,8 @@ bot = Bot(token=config.token)
 dp = Dispatcher(bot)
 
 last_printer_state = 'Closed'
+file_offsets = None
+file_name = ''
 
 command_cb = CallbackData('id','action')  # post:<id>:<action>
 
@@ -56,6 +62,26 @@ class Printer_State:
     errorCode: str = '-1'
     success: bool = False
     data: str = ''
+
+#parse file for Z offsets
+def parse_file_for_offset(name, offset):
+    file_pos = 0
+    last_z = ''
+    with open(config.filesdir+name, 'r') as fp:
+        for line in fp:
+            last_offset = file_pos
+
+            if offset <= file_pos:
+                return last_z
+            m = re.search(r"Z\d+.\d+", line)
+            if m:
+                try:
+                    res = m.group(0)
+                    last_z = res
+                except IndexError:
+                    pass
+            file_pos += len(line)
+    return '-1'
 
 #get printer status
 def get_printer_connection_status():
@@ -126,7 +152,7 @@ def check_user(user_id):
 def get_main_keyboard():
     return types.InlineKeyboardMarkup().row(
         types.InlineKeyboardButton('❔ Status', callback_data=command_cb.new(action='kb_status'),parse_mode=ParseMode.MARKDOWN),
-        types.InlineKeyboardButton('Photo', callback_data=command_cb.new(action='photo')),
+        types.InlineKeyboardButton('Photo', callback_data=command_cb.new(action='kb_photo')),
     )
 
 def user_friendly_seconds(n):
@@ -167,6 +193,14 @@ async def callback_status_command(query: types.CallbackQuery, callback_data: typ
                         msg += 'Принтер печатает\n'
                         if job_state.success:
                             msg += 'Файл: '+job_state.data['job']['file']['name']
+                            if job_state.data['job']['estimatedPrintTime'] != None:
+                                msg += '\nПримерное время печати: '+user_friendly_seconds(job_state.data['job']['estimatedPrintTime'])
+                            try:
+                                _z = parse_file_for_offset(job_state.data['job']['file']['name'],job_state.data['progress']['filepos'])
+                                if _z != '-1':
+                                    msg += '\nВысота: '+_z
+                            except Exception:
+                                msg += '\nВысота Z "неизвестна"'
                             if job_state.data['job']['filament'] != None:
                                 msg += '\nИзрасходуется: '+str(round(job_state.data['job']['filament']['tool0']['length'],2))+' мм / '+str(round(job_state.data['job']['filament']['tool0']['volume'],2))+' см³'
                             msg += '\nПрогресс: '+str(round(job_state.data['progress']['completion'],2))+' %'
@@ -192,6 +226,12 @@ async def callback_status_command(query: types.CallbackQuery, callback_data: typ
         except Exception:
             await bot.send_message(query.message.chat.id, 'Не удалось получить фото')
 
+#button "photo"
+@dp.callback_query_handler(command_cb.filter(action='kb_photo'))
+async def callback_photo_command(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+    if check_user(query.message.chat.id):
+        await query.answer("получение статуса...")  # don't forget to answer callback query as soon as possible\
+        parse_file_for_offsets('111.gcode')
 
 
 if __name__ == '__main__':
