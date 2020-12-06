@@ -34,14 +34,19 @@ config = configparser.ConfigParser()
 config.read('config.ini')
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+@dataclass
+class Print_File_Data:
+    last_z_pos = -1.0
+    max_z_pos = -1.0
+    file_name = ''
+    offsets = {}
+
 
 bot = Bot(token=config.get("main", "token"))
 dp = Dispatcher(bot)
 
 last_printer_state = 'Closed'
-file_offsets = {}
-file_name = ''
-last_z_pos = '-1'
+print_file: Print_File_Data = None
 
 command_cb = CallbackData('id','action')  # post:<id>:<action>
 
@@ -60,30 +65,53 @@ class Printer_State:
 
 #parse file for Z offsets
 def parse_file_for_offsets(name):
+    global print_file
     file_pos = 0
-    file_offsets.clear()
+    print_file = None
+    max_z = -1.0
+    max_z_finish = float(config.get('main','max_z_finish'))
+    new_file_data = Print_File_Data()
+    new_file_data.file_name = name
     with open(config.get("main", "filesdir")+name, 'r') as fp:
         for line in fp:
             last_offset = file_pos
 
-            m = re.search(r"Z\d+.\d+", line)
-            if m:
-                try:
-                    res = m.group(0)
-                    file_offsets.update({file_pos:res})
-                except IndexError:
-                    pass
+            m = re.search(r"(?<=Z)\d+\.\d+", line)
             file_pos += len(line)
-    return '-1'
+            if m:
+                res_text = m.group(0)
+                res = float(res_text) #resulted Z pos
+                try:
+                    if res > max_z:
+                        if max_z_finish != -1.0:
+                            if res < max_z_finish:
+                                max_z = res
+                        else:
+                            max_z = res
+                except Exception:
+                    pass
+
+                new_file_data.offsets.update({file_pos+len(res_text):res})
+    new_file_data.max_z_pos = max_z
+    print_file = new_file_data
+    print(new_file_data.offsets)
+    print(max_z)
 
 #get current Z pos from file
 def get_current_z_pos(offset):
-    lastkey = None
-    for key in file_offsets.keys():
-        if offset <= key and lastkey != None:
-            return file_offsets.get(lastkey,-1)
-        lastkey = key
-    return '-1'
+    global print_file
+    if print_file != None:
+        #temp pos
+        lastkey = None
+        for key in print_file.offsets.keys():
+            if offset <= key and lastkey != None:
+                return print_file.offsets.get(lastkey,-1)
+            lastkey = key
+    return -1
+
+#get z position as string with max and percentage
+def get_z_pos_str():
+    return
 
 #get printer status
 def get_printer_connection_status():
@@ -175,7 +203,7 @@ def str_round(number):
 
 async def update_printer_status():
     current_state = ''
-    global last_printer_state,last_z_pos
+    global last_printer_state,print_file
     job_state = None
     connection_status = get_printer_connection_status()
     if connection_status.success:
@@ -188,6 +216,7 @@ async def update_printer_status():
 
             job_state = get_printer_job_state()
 
+    #Operational
     if current_state == 'Operational':
         if last_printer_state in ['Closed','Connecting']:
             #printer connected
@@ -199,25 +228,28 @@ async def update_printer_status():
             await send_information_about_job_action('Печать завершена.')
             await send_printer_status(config.admin)
             print('Print '+job_state.data['job']['file']['name']+' finished')
+    #Closed
     if current_state == 'Closed':
         if last_printer_state != 'Closed':
             #printer disconnected
             await send_information_about_job_action('Принтер отключен')
             print('Printer disconnected')
+    #Connecting
     elif current_state == 'Connecting':
         if last_printer_state == 'Closed':
             #printer connecting
             await send_information_about_job_action('Подключение к принтеру')
             print('Printer connecting')
+    #Printing
     elif current_state == 'Printing':
         if last_printer_state == 'Printing':
             #get current z progress
             _z = get_current_z_pos(job_state.data['progress']['filepos'])
-            if _z != last_z_pos:
+            if _z != file_offsets.last_z_pos:
                 await send_printer_status(config.admin)
             last_z_pos = _z
-            if (_z != '-1'):
-                print('Printing '+job_state.data['job']['file']['name'] + " at "+_z)
+            if (_z != -1):
+                print('Printing '+job_state.data['job']['file']['name'] + " at "+str(_z))
         elif last_printer_state in ['Paused','Resuming','Pausing']:
             #resumed printing file
             await send_information_about_job_action('Печать продолжена.')
@@ -230,18 +262,21 @@ async def update_printer_status():
             await send_printer_status(config.admin)
             print('Start printing '+job_state.data['job']['file']['name'])
             parse_file_for_offsets(job_state.data['job']['file']['name'])
+    #Paused
     elif current_state == 'Paused':
         if last_printer_state in ['Pausing','Operational']:
             #print paused
             await send_information_about_job_action('Печать приостановлена.')
             await send_printer_status(config.admin)
             print('Print '+job_state.data['job']['file']['name']+' paused')
+    #Pausing
     elif current_state == 'Pausing':
         if last_printer_state != 'Pausing':
             #print pausing
             await send_information_about_job_action('Печать ставится на паузу.')
             await send_printer_status(config.admin)
             print('Print '+job_state.data['job']['file']['name']+' pausing')
+    #Cancelling
     elif current_state == 'Cancelling':
         if last_printer_state != 'Cancelling':
             #print cancelling
@@ -266,7 +301,9 @@ async def start_command(message: types.Message):
 async def echo(message: types.Message):
     await message.answer(message.text + "\nYou ID: "+ str(message.from_user.id))
 
+#send printer status
 async def send_printer_status(chat_id):
+    global print_file
     connection_status = get_printer_connection_status()
     msg = datetime.now().strftime('%d-%m-%Y %H:%M')+'\n'
     if connection_status.success:
@@ -306,10 +343,10 @@ async def send_printer_status(chat_id):
                         if job_state.data['job']['estimatedPrintTime'] != None:
                             msg += '\n⏱ Примерное время печати: '+user_friendly_seconds(job_state.data['job']['estimatedPrintTime'])
                         _z = get_current_z_pos(job_state.data['progress']['filepos'])
-                        if _z != '-1':
-                            msg += '\n🏔Высота: '+_z
+                        if _z != -1:
+                            msg += '\n🏔Высота: '+str(_z) + "/" +str(print_file.max_z_pos) + " " +str(round(100*_z/print_file.max_z_pos,1))+" высоты"
                         else:
-                            msg += '\n🏔Высота Z "неизвестна"'
+                            msg += '\n🏔Высота Z ?'
                         if job_state.data['job']['filament'] != None:
                             msg += '\n⛓Израсходуется: '+str(round(job_state.data['job']['filament']['tool0']['length'],2))+' мм / '+str(round(job_state.data['job']['filament']['tool0']['volume'],2))+' см³'
                         msg += '\n🔄Прогресс: '+str(round(job_state.data['progress']['completion'],2))+' %'
