@@ -17,7 +17,7 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import ParseMode
 from aiogram.utils.callback_data import CallbackData
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger('broadcast')
 
 #config++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -30,18 +30,12 @@ class octobot_config:
     octoprint: str
     filesdir: str
 
-config_file = configparser.ConfigParser()
-config_file.read('config.ini')
-
-config = octobot_config(token = config_file.get("main", "token"),
-                        key = config_file.get("main", "key"),
-                        admin = config_file.get("main", "admin"),
-                        octoprint = config_file.get("main", "octoprint"),
-                        filesdir = config_file.get("main", "filesdir"))
+config = configparser.ConfigParser()
+config.read('config.ini')
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-bot = Bot(token=config.token)
+bot = Bot(token=config.get("main", "token"))
 dp = Dispatcher(bot)
 
 last_printer_state = 'Closed'
@@ -65,10 +59,10 @@ class Printer_State:
     data: str = ''
 
 #parse file for Z offsets
-def parse_file_for_offset(name):
+def parse_file_for_offsets(name):
     file_pos = 0
     file_offsets.clear()
-    with open(config.filesdir+name, 'r') as fp:
+    with open(config.get("main", "filesdir")+name, 'r') as fp:
         for line in fp:
             last_offset = file_pos
 
@@ -95,7 +89,7 @@ def get_current_z_pos(offset):
 def get_printer_connection_status():
     status = Printer_Connection()
     try:
-        r = requests.get(url = config.octoprint+'/api/connection', headers = {'X-Api-Key':config.key})
+        r = requests.get(url = config.get("main", "octoprint")+'/api/connection', headers = {'X-Api-Key':config.get("main", "key")}, timeout=5)
         if r.status_code == 200:
             json_data = json.loads(r.text)
             status.state = json_data['current']['state']
@@ -112,7 +106,7 @@ def get_printer_connection_status():
 def get_printer_state():
     state = Printer_State()
     try:
-        r = requests.get(url = config.octoprint+'/api/printer', headers = {'X-Api-Key':config.key})
+        r = requests.get(url = config.get("main", "octoprint")+'/api/printer', headers = {'X-Api-Key':config.get("main", "key")},timeout=5)
         if r.status_code == 200:
             state.data = json.loads(r.text)
             state.success = True
@@ -128,7 +122,7 @@ def get_printer_state():
 def get_printer_job_state():
     job_state = Printer_State()
     try:
-        r = requests.get(url = config.octoprint+'/api/job', headers = {'X-Api-Key':config.key})
+        r = requests.get(url = config.get("main", "octoprint")+'/api/job', headers = {'X-Api-Key':config.get("main", "key")},timeout=5)
         if r.status_code == 200:
             job_state.data = json.loads(r.text)
             if job_state.data['progress']['printTime'] == None:
@@ -152,7 +146,7 @@ def make_photo():
     subprocess.call("bash photo.sh", shell=True)
 
 def check_user(user_id):
-    if str(user_id) == config.admin:
+    if str(user_id) == config.get("main", "admin"):
         return True
     else:
         return False
@@ -162,10 +156,10 @@ def get_main_keyboard():
         types.InlineKeyboardButton('❔ Status', callback_data=command_cb.new(action='kb_status')),
         types.InlineKeyboardButton('📸Photo', callback_data=command_cb.new(action='kb_photo')),
         types.InlineKeyboardButton('🖨Print...', callback_data=command_cb.new(action='kb_print')),
-    ).add(types.InlineKeyboardButton('📛STOP', callback_data=command_cb.new(action='kb_stop'))).row(
-        types.InlineKeyboardButton('� Settings', callback_data=command_cb.new(action='kb_status')),
-        types.InlineKeyboardButton('✔ Silent', callback_data=command_cb.new(action='kb_photo')),
-        types.InlineKeyboardButton('📲Action', callback_data=command_cb.new(action='kb_print')),
+    ).add(types.InlineKeyboardButton('📛STOP', callback_data=command_cb.new(action='kb_stop_request'))).row(
+        types.InlineKeyboardButton('� Settings', callback_data=command_cb.new(action='kb_show_settings')),
+        types.InlineKeyboardButton('✔ Silent', callback_data=command_cb.new(action='kb_silent_toggle')),
+        types.InlineKeyboardButton('📲Action', callback_data=command_cb.new(action='kb_show_actions')),
     )
 
 def get_show_keyboard_button():
@@ -195,23 +189,18 @@ async def update_printer_status():
             job_state = get_printer_job_state()
 
     if current_state == 'Operational':
-        if (last_printer_state == 'Closed' or
-            last_printer_state == 'Connecting'):
+        if last_printer_state in ['Closed','Connecting']:
             #printer connected
             await send_information_about_job_action('Принтер подключен.')
             await send_printer_status(config.admin)
             print('Printer connected')
-        elif (last_printer_state == 'Printing' or
-            last_printer_state == 'Pausing' or
-            last_printer_state == 'Paused' or
-            last_printer_state == 'Resuming' or
-            last_printer_state == 'Cancelling'):
+        elif last_printer_state in ['Printing','Pausing','Paused','Resuming','Cancelling']:
             #print finished
             await send_information_about_job_action('Печать завершена.')
             await send_printer_status(config.admin)
             print('Print '+job_state.data['job']['file']['name']+' finished')
     if current_state == 'Closed':
-        if (last_printer_state != 'Closed'):
+        if last_printer_state != 'Closed':
             #printer disconnected
             await send_information_about_job_action('Принтер отключен')
             print('Printer disconnected')
@@ -221,7 +210,7 @@ async def update_printer_status():
             await send_information_about_job_action('Подключение к принтеру')
             print('Printer connecting')
     elif current_state == 'Printing':
-        if (last_printer_state == 'Printing'):
+        if last_printer_state == 'Printing':
             #get current z progress
             _z = get_current_z_pos(job_state.data['progress']['filepos'])
             if _z != last_z_pos:
@@ -229,22 +218,20 @@ async def update_printer_status():
             last_z_pos = _z
             if (_z != '-1'):
                 print('Printing '+job_state.data['job']['file']['name'] + " at "+_z)
-        elif (last_printer_state == 'Operational'):
+        elif last_printer_state in ['Paused','Resuming','Pausing']:
+            #resumed printing file
+            await send_information_about_job_action('Печать продолжена.')
+            await send_printer_status(config.admin)
+            print('Print '+job_state.data['job']['file']['name']+' resumed')
+        else: #if last_printer_state in ['Operational', 'Closed','Connecting']:
             #start printing file
             last_z = '-1'
             await send_information_about_job_action('Печать запущена. ')
             await send_printer_status(config.admin)
             print('Start printing '+job_state.data['job']['file']['name'])
-            parse_file_for_offset(job_state.data['job']['file']['name'])
-        elif (last_printer_state == 'Paused' or
-            last_printer_state == 'Resuming'):
-            #resumed printing file
-            await send_information_about_job_action('Печать продолжена.')
-            await send_printer_status(config.admin)
-            print('Print '+job_state.data['job']['file']['name']+' resumed')
+            parse_file_for_offsets(job_state.data['job']['file']['name'])
     elif current_state == 'Paused':
-        if (last_printer_state == 'Pausing' or
-            last_printer_state == 'Operational'):
+        if last_printer_state in ['Pausing','Operational']:
             #print paused
             await send_information_about_job_action('Печать приостановлена.')
             await send_printer_status(config.admin)
@@ -274,9 +261,10 @@ async def start_command(message: types.Message):
     if check_user(message.from_user.id):
         await bot.send_message(message.from_user.id,'Выберите действие', reply_markup=get_main_keyboard())
 
+#echo all
 @dp.message_handler()
 async def echo(message: types.Message):
-    await message.answer(message.text)
+    await message.answer(message.text + "\nYou ID: "+ str(message.from_user.id))
 
 async def send_printer_status(chat_id):
     connection_status = get_printer_connection_status()
