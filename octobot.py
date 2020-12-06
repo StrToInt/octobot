@@ -33,6 +33,11 @@ class octobot_config:
 config = configparser.ConfigParser()
 config.read('config.ini')
 
+#writeconfig
+def config_write():
+    with open('config.ini', "w") as config_file:
+        config.write(config_file)
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 @dataclass
 class Print_File_Data:
@@ -69,7 +74,7 @@ def parse_file_for_offsets(name):
     file_pos = 0
     print_file = None
     max_z = -1.0
-    max_z_finish = float(config.get('main','max_z_finish'))
+    max_z_finish = float(config.get('printer','max_z_finish'))
     new_file_data = Print_File_Data()
     new_file_data.file_name = name
     with open(config.get("main", "filesdir")+name, 'r') as fp:
@@ -166,8 +171,13 @@ def get_printer_job_state():
     finally:
         return job_state
 
+#boolean smile
+def get_smile_for_boolean(inp):
+    return '+' if inp == True else '-'
 
-
+#boolean on/off
+def get_smile_for_boolean_str(inp):
+    return 'вкл' if inp == True else 'выкл'
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def make_photo():
@@ -181,13 +191,25 @@ def check_user(user_id):
 
 def get_main_keyboard():
     return types.InlineKeyboardMarkup().row(
-        types.InlineKeyboardButton('❔ Status', callback_data=command_cb.new(action='kb_status')),
-        types.InlineKeyboardButton('📸Photo', callback_data=command_cb.new(action='kb_photo')),
-        types.InlineKeyboardButton('🖨Print...', callback_data=command_cb.new(action='kb_print')),
+        types.InlineKeyboardButton('❔ Статус', callback_data=command_cb.new(action='kb_status')),
+        types.InlineKeyboardButton('📸Фото', callback_data=command_cb.new(action='kb_photo')),
+        types.InlineKeyboardButton('🖨Печать...', callback_data=command_cb.new(action='kb_print')),
     ).add(types.InlineKeyboardButton('📛STOP', callback_data=command_cb.new(action='kb_stop_request'))).row(
-        types.InlineKeyboardButton('� Settings', callback_data=command_cb.new(action='kb_show_settings')),
-        types.InlineKeyboardButton('✔ Silent', callback_data=command_cb.new(action='kb_silent_toggle')),
-        types.InlineKeyboardButton('📲Action', callback_data=command_cb.new(action='kb_show_actions')),
+        types.InlineKeyboardButton('� Настройки', callback_data=command_cb.new(action='kb_show_settings')),
+        types.InlineKeyboardButton(get_smile_for_boolean(config.getboolean('misc','silent'))+' Silent', callback_data=command_cb.new(action='kb_silent_toggle')),
+        types.InlineKeyboardButton('📲Действия', callback_data=command_cb.new(action='kb_show_actions')),
+    )
+
+
+def get_settings_keyboard():
+    return types.InlineKeyboardMarkup().row(
+        types.InlineKeyboardButton(get_smile_for_boolean(config.get('misc','silent'))+' Беззвук', callback_data=command_cb.new(action='kb_silent_toggle'))
+    ).row(
+        types.InlineKeyboardButton(get_smile_for_boolean(config.get('misc','silent'))+' Беззвук на фото', callback_data=command_cb.new(action='kb_photo_silent_toggle')),
+    ).row(
+        types.InlineKeyboardButton(get_smile_for_boolean(config.get('misc','silent'))+' Беззвук на изменение Z', callback_data=command_cb.new(action='kb_z_silent_toggle')),
+    ).row(
+        types.InlineKeyboardButton('Назад', callback_data=command_cb.new(action='kb_show_keyboard')),
     )
 
 def get_show_keyboard_button():
@@ -246,7 +268,7 @@ async def update_printer_status():
             #get current z progress
             _z = get_current_z_pos(job_state.data['progress']['filepos'])
             if _z != file_offsets.last_z_pos:
-                await send_printer_status(config.admin)
+                await send_printer_status(config.admin,silent = config.getboolean('misc','silent_z_change') )
             last_z_pos = _z
             if (_z != -1):
                 print('Printing '+job_state.data['job']['file']['name'] + " at "+str(_z))
@@ -302,7 +324,7 @@ async def echo(message: types.Message):
     await message.answer(message.text + "\nYou ID: "+ str(message.from_user.id))
 
 #send printer status
-async def send_printer_status(chat_id):
+async def send_printer_status(chat_id, silent = False):
     global print_file
     connection_status = get_printer_connection_status()
     msg = datetime.now().strftime('%d-%m-%Y %H:%M')+'\n'
@@ -327,6 +349,7 @@ async def send_printer_status(chat_id):
                     #get job state if printing
                     job_state = get_printer_job_state()
                     if job_state.success:
+
                         msg += '🖨Принтер '
                         if printer_state.data['state']['flags']['printing']:
                             msg += 'печатает'
@@ -339,6 +362,7 @@ async def send_printer_status(chat_id):
                         elif printer_state.data['state']['flags']['cancelling']:
                             msg += 'отменяет печать'
                         msg += '\n'
+
                         msg += '💾Файл: '+job_state.data['job']['file']['name']
                         if job_state.data['job']['estimatedPrintTime'] != None:
                             msg += '\n⏱ Примерное время печати: '+user_friendly_seconds(job_state.data['job']['estimatedPrintTime'])
@@ -360,45 +384,97 @@ async def send_printer_status(chat_id):
                 #msg += json.dumps(printer_state.data, indent=2)
             else:
                 msg += '🆘Ошибка получения данных о статусе'
-        await bot.send_message(chat_id, msg, reply_markup=get_show_keyboard_button())
+        await bot.send_message(chat_id, msg, reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
     elif connection_status.errorCode != '-1':
-        await bot.send_message(chat_id, 'Ошибка получения статуса!\n Код ответа: '+connection_status.errorCode, reply_markup=get_show_keyboard_button())
+        await bot.send_message(chat_id, 'Ошибка получения статуса!\n Код ответа: '+connection_status.errorCode, reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
     else:
-        await bot.send_message(chat_id, 'Подключение к OCTOPRINT не удалось', reply_markup=get_show_keyboard_button())
+        await bot.send_message(chat_id, 'Подключение к OCTOPRINT не удалось', reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
 
     #make photo
-    await send_photo(chat_id)
+    await send_photo(chat_id,silent)
 
 
-async def send_photo(chat_id):
+async def send_photo(chat_id, silent):
     try:
         make_photo()
-        with open('photo.jpg', 'rb') as photo:
-            await bot.send_chat_action(chat_id, action = 'upload_photo')
-            await bot.send_photo(chat_id,photo, reply_markup=get_show_keyboard_button())
+        cam_count = config.get('main','cam_count')
+        if cam_count == 1:
+            with open('photo.jpg', 'rb') as photo:
+                await bot.send_chat_action(chat_id, action = 'upload_photo')
+                await bot.send_photo(chat_id,photo, reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent_photos') )
+        else:
+            for c in range(1,cam_count):
+                with open('photo'+c+'.jpg', 'rb') as photo:
+                    await bot.send_chat_action(chat_id, action = 'upload_photo')
+                    await bot.send_photo(chat_id,photo, caption = 'Камера #'+str(c), reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent_photos') )
     except Exception:
         await bot.send_message(chat_id, '🆘Не удалось получить фото', reply_markup=get_show_keyboard_button())
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 #button "status"
 @dp.callback_query_handler(command_cb.filter(action='kb_status'))
 async def callback_status_command(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     if check_user(query.message.chat.id):
-        await query.answer("получение статуса...")  # don't forget to answer callback query as soon as possible\
+        await query.answer("получение статуса...")
         await send_printer_status(query.message.chat.id)
 
 #button "photo"
 @dp.callback_query_handler(command_cb.filter(action='kb_photo'))
 async def callback_photo_command(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     if check_user(query.message.chat.id):
-        await query.answer("получение фото...")  # don't forget to answer callback query as soon as possible\
+        await query.answer("получение фото...")
+        await send_photo(query.message.chat.id)
+
+#button "silent_mode"
+@dp.callback_query_handler(command_cb.filter(action='kb_photo'))
+async def callback_photo_command(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+    if check_user(query.message.chat.id):
+        await query.answer("получение фото...")
         await send_photo(query.message.chat.id)
 
 #button "show keyboard"
 @dp.callback_query_handler(command_cb.filter(action='kb_show_keyboard'))
 async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
-    await query.answer("выберите действие...")  # don't forget to answer callback query as soon as possible\
-    await start_command(query)
+    if check_user(query.message.chat.id):
+        await query.answer("выберите действие...")
+        await start_command(query)
+
+#button "show settings"
+@dp.callback_query_handler(command_cb.filter(action='kb_show_settings'))
+async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+    if check_user(query.message.chat.id):
+        await query.answer("Настройки")
+        await bot.send_message(query.message.chat.id,'Настройки', reply_markup=get_settings_keyboard())
+
+#button "silent mode toggle"
+@dp.callback_query_handler(command_cb.filter(action='kb_silent_toggle'))
+async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+    if check_user(query.message.chat.id):
+        val = not config.getboolean('misc','silent')
+        config.set('misc','silent', str(val))
+        config_write()
+        await query.answer("Режим беззвука: " + get_smile_for_boolean_str(val))
+
+#button "silent photo mode toggle"
+@dp.callback_query_handler(command_cb.filter(action='kb_photo_silent_toggle'))
+async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+    if check_user(query.message.chat.id):
+        val = not config.getboolean('misc','silent_photos')
+        config.set('misc','silent_photos', str(val))
+        config_write()
+        await query.answer("Режим беззвука для фотографий: " + get_smile_for_boolean_str(val))
+
+#button "silent z change toggle"
+@dp.callback_query_handler(command_cb.filter(action='kb_z_silent_toggle'))
+async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+    if check_user(query.message.chat.id):
+        val = not config.getboolean('misc','silent_z_change')
+        config.set('misc','silent_z_change', str(val))
+        config_write()
+        await query.answer("Режим беззвука на изменение Z: " + get_smile_for_boolean_str(val))
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 def repeat(coro, loop):
     asyncio.ensure_future(coro(), loop=loop)
