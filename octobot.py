@@ -77,6 +77,7 @@ def parse_file_for_offsets(name):
     max_z_finish = float(config.get('printer','max_z_finish'))
     new_file_data = Print_File_Data()
     new_file_data.file_name = name
+    print('Parsing file for offsets: '+ name)
     with open(config.get("main", "filesdir")+name, 'r') as fp:
         for line in fp:
             last_offset = file_pos
@@ -383,7 +384,9 @@ async def send_printer_status(silent = False):
                             msg += '\n🏔Высота Z ?'
                         if job_state.data['job']['filament'] != None:
                             msg += '\n⛓Израсходуется: '+str(round(job_state.data['job']['filament']['tool0']['length'],2))+' мм / '+str(round(job_state.data['job']['filament']['tool0']['volume'],2))+' см³'
-                        tempp = '\n🔄Прогресс: '+str(round(job_state.data['progress']['completion'],2))+' %'
+                        tempp = '\n🔄Прогресс: ' + str(job_state.data['progress']['filepos'])+' / ' +\
+                            str(job_state.data['job']['file']['size'])+' байт '+\
+                            str(round(job_state.data['progress']['completion'],2))+' %'
                         photo_cation += tempp
                         msg += tempp
                         msg += '\n⏰ Время печати: '+user_friendly_seconds(job_state.data['progress']['printTime'])
