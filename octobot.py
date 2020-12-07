@@ -219,7 +219,7 @@ def get_show_keyboard_button():
     )
 
 def user_friendly_seconds(n):
-    return str(timedelta(seconds = n))
+    return str(timedelta(seconds = n,microseconds=0, milliseconds=0))
 
 def str_round(number):
     return str(round(number,2))
@@ -378,7 +378,7 @@ async def send_printer_status(silent = False):
                             msg += '\n⏱ Примерное время печати: '+user_friendly_seconds(job_state.data['job']['estimatedPrintTime'])
                         _z = get_current_z_pos(job_state.data['progress']['filepos'])
                         if _z != -1:
-                            photo_cation ='Высота: '+str(_z) + "/" +str(print_file.max_z_pos) + "мм (" +str(round(100*_z/print_file.max_z_pos,1))+"%)"
+                            photo_cation ='Высота: '+str(_z) + " / " +str(print_file.max_z_pos) + "мм (" +str(round(100*_z/print_file.max_z_pos,1))+"%)"
                             msg += '\n🏔'+photo_cation
                         else:
                             msg += '\n🏔Высота Z ?'
