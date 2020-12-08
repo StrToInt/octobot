@@ -17,7 +17,7 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import ParseMode
 from aiogram.utils.callback_data import CallbackData
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('broadcast')
 
 #config++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -76,6 +76,7 @@ def parse_file_for_offsets(name):
     max_z = -1.0
     max_z_finish = float(config.get('printer','max_z_finish'))
     new_file_data = Print_File_Data()
+    new_file_data.offsets = {}
     new_file_data.file_name = name
     print('Parsing file for offsets: '+ name)
     with open(config.get("main", "filesdir")+name, 'r') as fp:
@@ -209,6 +210,13 @@ def get_settings_keyboard():
         types.InlineKeyboardButton(get_smile_for_boolean(config.getboolean('misc','silent_photos'))+' Беззвук на фото', callback_data=command_cb.new(action='kb_photo_silent_toggle')),
     ).row(
         types.InlineKeyboardButton(get_smile_for_boolean(config.getboolean('misc','silent_z_change'))+' Беззвук на изменение Z', callback_data=command_cb.new(action='kb_z_silent_toggle')),
+    ).row(
+        types.InlineKeyboardButton('Назад', callback_data=command_cb.new(action='kb_show_keyboard')),
+    )
+
+def get_actions_keyboard():
+    return types.InlineKeyboardMarkup().row(
+        types.InlineKeyboardButton('🌋Прогнать файл по высотам Z', callback_data=command_cb.new(action='kb_reparse_file'))
     ).row(
         types.InlineKeyboardButton('Назад', callback_data=command_cb.new(action='kb_show_keyboard')),
     )
@@ -442,13 +450,6 @@ async def callback_photo_command(query: types.CallbackQuery, callback_data: typi
         await query.answer("получение фото...")
         await send_photo(query.message.chat.id)
 
-#button "silent_mode"
-@dp.callback_query_handler(command_cb.filter(action='kb_photo'))
-async def callback_photo_command(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
-    if check_user(query.message.chat.id):
-        await query.answer("получение фото...")
-        await send_photo(query.message.chat.id)
-
 #button "show keyboard"
 @dp.callback_query_handler(command_cb.filter(action='kb_show_keyboard'))
 async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
@@ -456,16 +457,23 @@ async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typi
         await query.answer("выберите действие...")
         await start_command(query)
 
+#button "show actions"
+@dp.callback_query_handler(command_cb.filter(action='kb_show_actions'))
+async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+    if check_user(query.message.chat.id):
+        await query.answer("выберите действие...")
+        await bot.send_message(query.message.chat.id,'Действия', reply_markup=get_actions_keyboard())
+
 #button "show settings"
 @dp.callback_query_handler(command_cb.filter(action='kb_show_settings'))
-async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+async def callback_show_settings(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     if check_user(query.message.chat.id):
         await query.answer("Настройки")
         await bot.send_message(query.message.chat.id,'Настройки', reply_markup=get_settings_keyboard())
 
 #button "silent mode toggle"
 @dp.callback_query_handler(command_cb.filter(action='kb_silent_toggle'))
-async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+async def callback_silent_mode_toggle(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     if check_user(query.message.chat.id):
         val = not config.getboolean('misc','silent')
         config.set('misc','silent', str(val))
@@ -474,7 +482,7 @@ async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typi
 
 #button "silent photo mode toggle"
 @dp.callback_query_handler(command_cb.filter(action='kb_photo_silent_toggle'))
-async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+async def callback_silent_photo_mode_toggle(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     if check_user(query.message.chat.id):
         val = not config.getboolean('misc','silent_photos')
         config.set('misc','silent_photos', str(val))
@@ -483,12 +491,24 @@ async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typi
 
 #button "silent z change toggle"
 @dp.callback_query_handler(command_cb.filter(action='kb_z_silent_toggle'))
-async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+async def callback_silent_z_change_toggle(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     if check_user(query.message.chat.id):
         val = not config.getboolean('misc','silent_z_change')
         config.set('misc','silent_z_change', str(val))
         config_write()
         await query.answer("Режим беззвука на изменение Z: " + get_smile_for_boolean_str(val))
+
+#button "reparse file"
+@dp.callback_query_handler(command_cb.filter(action='kb_reparse_file'))
+async def callback_reparse_file(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+    if check_user(query.message.chat.id):
+        job_state = get_printer_job_state()
+        if job_state.success:
+            await query.answer("Высчитывание высот для файла..")
+            parse_file_for_offsets(job_state.data['job']['file']['name'])
+            await bot.send_message(query.message.chat.id,'Высоты по файлу '+job_state.data['job']['file']['name']+' обновлены')
+        else:
+            await query.answer("Файл для печати не выбран!")
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -497,6 +517,7 @@ def repeat(coro, loop):
     loop.call_later(10, repeat, coro, loop)
 
 if __name__ == '__main__':
+    parse_file_for_offsets('nullprint.gcode')
     loop = asyncio.get_event_loop()
     loop.call_later(10, repeat, update_printer_status, loop)
     executor.start_polling(dp, skip_updates=True)
