@@ -41,6 +41,7 @@ def config_write():
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 @dataclass
 class Print_File_Data:
+    start_time = None
     last_z_pos = -1.0
     max_z_pos = -1.0
     file_name = ''
@@ -78,6 +79,7 @@ def parse_file_for_offsets(name):
     new_file_data = Print_File_Data()
     new_file_data.offsets = {}
     new_file_data.file_name = name
+    new_file_data.start_time = datetime.now()
     print('Parsing file for offsets: '+ name)
     with open(config.get("main", "filesdir")+name, 'r') as fp:
         for line in fp:
@@ -124,7 +126,7 @@ def get_z_pos_str():
 def get_printer_connection_status():
     status = Printer_Connection()
     try:
-        r = requests.get(url = config.get("main", "octoprint")+'/api/connection', headers = {'X-Api-Key':config.get("main", "key")}, timeout=5)
+        r = requests.get(url = config.get("main", "octoprint")+'/api/connection', headers = {'X-Api-Key':config.get("main", "key")}, timeout=3)
         if r.status_code == 200:
             json_data = json.loads(r.text)
             status.state = json_data['current']['state']
@@ -141,7 +143,7 @@ def get_printer_connection_status():
 def get_printer_state():
     state = Printer_State()
     try:
-        r = requests.get(url = config.get("main", "octoprint")+'/api/printer', headers = {'X-Api-Key':config.get("main", "key")},timeout=5)
+        r = requests.get(url = config.get("main", "octoprint")+'/api/printer', headers = {'X-Api-Key':config.get("main", "key")},timeout=3)
         if r.status_code == 200:
             state.data = json.loads(r.text)
             state.success = True
@@ -157,7 +159,7 @@ def get_printer_state():
 def get_printer_job_state():
     job_state = Printer_State()
     try:
-        r = requests.get(url = config.get("main", "octoprint")+'/api/job', headers = {'X-Api-Key':config.get("main", "key")},timeout=5)
+        r = requests.get(url = config.get("main", "octoprint")+'/api/job', headers = {'X-Api-Key':config.get("main", "key")},timeout=3)
         if r.status_code == 200:
             job_state.data = json.loads(r.text)
             if job_state.data['progress']['printTime'] == None:
@@ -172,6 +174,22 @@ def get_printer_job_state():
         job_state.success = False
     finally:
         return job_state
+
+#get printer registered commands
+def get_printer_commands():
+    printer_commands = Printer_State()
+    try:
+        r = requests.get(url = config.get("main", "octoprint")+'/api/system/commands/core', headers = {'X-Api-Key':config.get("main", "key")},timeout=2)
+        if r.status_code == 200:
+            printer_commands.data = json.loads(r.text)
+            printer_commands.success = True
+        else:
+            printer_commands.errorCode = str(r.status_code)
+            printer_commands.success = False
+    except Exception:
+        printer_commands.success = False
+    finally:
+        return printer_commands
 
 #boolean smile
 def get_smile_for_boolean(inp):
@@ -210,13 +228,6 @@ def get_settings_keyboard():
         types.InlineKeyboardButton(get_smile_for_boolean(config.getboolean('misc','silent_photos'))+' Беззвук на фото', callback_data=command_cb.new(action='kb_photo_silent_toggle')),
     ).row(
         types.InlineKeyboardButton(get_smile_for_boolean(config.getboolean('misc','silent_z_change'))+' Беззвук на изменение Z', callback_data=command_cb.new(action='kb_z_silent_toggle')),
-    ).row(
-        types.InlineKeyboardButton('Назад', callback_data=command_cb.new(action='kb_show_keyboard')),
-    )
-
-def get_actions_keyboard():
-    return types.InlineKeyboardMarkup().row(
-        types.InlineKeyboardButton('🌋Прогнать файл по высотам Z', callback_data=command_cb.new(action='kb_reparse_file'))
     ).row(
         types.InlineKeyboardButton('Назад', callback_data=command_cb.new(action='kb_show_keyboard')),
     )
@@ -382,6 +393,8 @@ async def send_printer_status(silent = False):
                         msg += '\n'
 
                         msg += '💾Файл: '+job_state.data['job']['file']['name']
+                        if print_file.start_time != None:
+                            msg += '\n⏱ Печать начата: '+print_file.start_time.strftime('%d.%m.%Y %H:%M')
                         if job_state.data['job']['estimatedPrintTime'] != None:
                             msg += '\n⏱ Примерное время печати: '+user_friendly_seconds(job_state.data['job']['estimatedPrintTime'])
                         _z = get_current_z_pos(job_state.data['progress']['filepos'])
@@ -459,10 +472,24 @@ async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typi
 
 #button "show actions"
 @dp.callback_query_handler(command_cb.filter(action='kb_show_actions'))
-async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+async def callback_show_actions_keyboard(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     if check_user(query.message.chat.id):
         await query.answer("выберите действие...")
-        await bot.send_message(query.message.chat.id,'Действия', reply_markup=get_actions_keyboard())
+        commands_data = get_printer_commands()
+        kbd = types.InlineKeyboardMarkup().row(
+            types.InlineKeyboardButton('🌋Прогнать файл по высотам Z', callback_data=command_cb.new(action='kb_reparse_file'))
+            )
+        if commands_data.success:
+            add_kbd=[]
+            print(commands_data.data)
+            for command in commands_data.data:
+                add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=command_cb.new(action=command['action'])))
+
+        kbd.add(*add_kbd)
+        kbd.row(
+                types.InlineKeyboardButton('Назад', callback_data=command_cb.new(action='kb_show_keyboard')),
+            )
+        await bot.send_message(query.message.chat.id,'Действия', reply_markup=kbd)
 
 #button "show settings"
 @dp.callback_query_handler(command_cb.filter(action='kb_show_settings'))
