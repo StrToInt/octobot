@@ -434,13 +434,15 @@ async def send_photo(chat_id, silent = False, cap = None):
     try:
         make_photo()
         cam_count = config.getint('printer','cam_count')
+        print(f'Make photo from {cam_count} cameras')
         if cam_count == 1:
             with open('photo.jpg', 'rb') as photo:
                 await bot.send_chat_action(chat_id, action = 'upload_photo')
                 await bot.send_photo(chat_id,photo, caption = cap, reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent_photos') )
         else:
-            for c in range(1,cam_count):
-                with open('photo'+c+'.jpg', 'rb') as photo:
+            for c in range(1,cam_count+1):
+                print(f'Send photo from #{c} camera')
+                with open('photo'+str(c)+'.jpg', 'rb') as photo:
                     await bot.send_chat_action(chat_id, action = 'upload_photo')
                     await bot.send_photo(chat_id,photo, caption = 'Камера #'+str(c), reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent_photos') )
     except Exception as e:
