@@ -6,6 +6,7 @@ import configparser
 import requests
 import json
 import math
+import pprint
 import re
 from dataclasses import dataclass
 import subprocess
@@ -363,9 +364,8 @@ async def start_command(message: types.Message):
 async def echo(message: types.Message):
     await message.answer(message.text + "\nYou ID: "+ str(message.from_user.id))
 
-#send printer status
-async def send_printer_status(silent = False):
-    chat_id = config.get('main','admin')
+#get printer status text
+async def get_printer_status_string():
     photo_cation = 'Фото '
     global print_file
     connection_status = get_printer_connection_status()
@@ -415,7 +415,7 @@ async def send_printer_status(silent = False):
 
                         if print_file != None:
                             if _z[0] != -1:
-                                photo_cation ='Высота: '+str(_z[0]) + " / " +str(print_file.max_z_pos) + "мм " +\
+                                photo_cation ='Высота: '+str(round(_z[0],2)) + " / " +str(round(print_file.max_z_pos,2)) + "мм " +\
                                     str(round(100*_z[0]/print_file.max_z_pos,1))+"% Осталось: "+str(round(print_file.max_z_pos-_z[0],2))+"мм"+\
                                     "\n📚Слой "+str(_z[1]) + " / "+str(_z[2])+" "+str(round(100*_z[1]/_z[2],1))+"% Осталось: "+str(_z[2]-_z[1])
                                 if print_file.common_layer_time != None:
@@ -436,38 +436,48 @@ async def send_printer_status(silent = False):
                         msg += '\n⏰ Закончится: '+time_end.strftime('%d.%m.%Y %H:%M')
                     else:
                         msg += '🆘Ошибка получения данных о печати'
-
-                #msg += json.dumps(printer_state.data, indent=2)
             else:
                 msg += '🆘Ошибка получения данных о статусе'
-        await bot.send_message(chat_id, msg, reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
-    elif connection_status.errorCode != '-1':
-        await bot.send_message(chat_id, 'Ошибка получения статуса!\n Код ответа: '+connection_status.errorCode, reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
+            return [1,msg]
     else:
-        await bot.send_message(chat_id, 'Подключение к OCTOPRINT не удалось', reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
-
-    #make photo
-    await send_photo(chat_id,silent,photo_cation)
+        return [0,connection_status.errorCode]
+    return [-1,'']
 
 
-async def send_photo(chat_id, silent = False, cap = None):
-    try:
-        make_photo()
-        cam_count = config.getint('printer','cam_count')
-        print(f'Make photo from {cam_count} cameras')
-        if cam_count == 1:
-            with open('photo.jpg', 'rb') as photo:
-                await bot.send_chat_action(chat_id, action = 'upload_photo')
-                await bot.send_photo(chat_id,photo, caption = cap, reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent_photos') )
-        else:
-            for c in range(1,cam_count+1):
-                print(f'Send photo from #{c} camera')
-                with open('photo'+str(c)+'.jpg', 'rb') as photo:
-                    await bot.send_chat_action(chat_id, action = 'upload_photo')
-                    await bot.send_photo(chat_id,photo, caption = 'Камера #'+str(c), reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent_photos') )
-    except Exception as e:
-        await bot.send_message(chat_id, '🆘Не удалось получить фото', reply_markup=get_show_keyboard_button())
-        print(str(e))
+#send printer status
+async def send_printer_status(silent = False):
+    chat_id = config.get('main','admin')
+    status = await get_printer_status_string()
+    if status[0] == -1:
+        pass
+        #await bot.send_message(chat_id, 'Подключение к OCTOPRINT не удалось', reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
+    elif status[0] == 0:
+        pass
+        #await bot.send_message(chat_id, 'Ошибка получения статуса!\n Код ответа: '+status[1], reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
+    else:
+        #send message if all success
+
+        if  config.getint('printer','cam_count') > 0:
+            await send_photos(chat_id,silent,None)
+
+        await bot.send_message(chat_id, status[1], reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
+
+async def send_photos(chat_id, silent = False, cap = None):
+    make_photo()
+    cam_count = config.getint('printer','cam_count')
+    print(f'Make photo from {cam_count} cameras')
+    if cam_count == 1:
+        with open('photo.jpg', 'rb') as photo:
+            await bot.send_chat_action(chat_id, action = 'upload_photo')
+            await bot.send_photos(chat_id,photo, caption = cap, reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent_photos') )
+    else:
+        media = types.MediaGroup()
+        for c in range(1,cam_count+1):
+            print(f'Attach photo from #{c} camera')
+            media.attach_photo(types.InputFile('photo'+str(c)+'.jpg'), caption = cap if c == 1 else None)
+
+        await bot.send_chat_action(chat_id, action = 'upload_photo')
+        await bot.send_media_group(chat_id,media, disable_notification = silent or config.getboolean('misc','silent') )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -483,7 +493,7 @@ async def callback_status_command(query: types.CallbackQuery, callback_data: typ
 async def callback_photo_command(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     if check_user(query.message.chat.id):
         await query.answer("получение фото...")
-        await send_photo(query.message.chat.id)
+        await send_photos(query.message.chat.id)
 
 #button "show keyboard"
 @dp.callback_query_handler(command_cb.filter(action='kb_show_keyboard'))
