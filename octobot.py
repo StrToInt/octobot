@@ -187,10 +187,10 @@ def get_printer_job_state():
         return job_state
 
 #get printer registered commands
-def get_printer_commands():
+def get_printer_commands(source = 'core'):
     printer_commands = Printer_State()
     try:
-        r = requests.get(url = config.get("main", "octoprint")+'/api/system/commands/core', headers = {'X-Api-Key':config.get("main", "key")},timeout=2)
+        r = requests.get(url = config.get("main", "octoprint")+'/api/system/commands/'+source, headers = {'X-Api-Key':config.get("main", "key")},timeout=2)
         if r.status_code == 200:
             printer_commands.data = json.loads(r.text)
             printer_commands.success = True
@@ -260,6 +260,7 @@ async def update_printer_status():
     job_state = None
     connection_status = get_printer_connection_status()
     if connection_status.success:
+        print('Printer status:' + connection_status.state)
         if connection_status.state == 'Closed':
             current_state = connection_status.state
         else:
@@ -276,7 +277,7 @@ async def update_printer_status():
             await send_information_about_job_action('Принтер подключен.')
             await send_printer_status()
             print('Printer connected')
-        elif last_printer_state in ('Printing','Pausing','Paused','Resuming','Cancelling'):
+        elif last_printer_state in ('Printing','Pausing','Paused','Resuming','Cancelling','Finishing'):
             #print finished
             await send_information_about_job_action('Печать завершена.')
             await send_printer_status()
@@ -507,17 +508,25 @@ async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typi
 async def callback_show_actions_keyboard(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     if check_user(query.message.chat.id):
         await query.answer("выберите действие...")
-        commands_data = get_printer_commands()
         kbd = types.InlineKeyboardMarkup().row(
             types.InlineKeyboardButton('🌋Прогнать файл по высотам Z', callback_data=command_cb.new(action='kb_reparse_file'))
             )
+        commands_data = get_printer_commands('core')
         if commands_data.success:
             add_kbd=[]
             print(commands_data.data)
             for command in commands_data.data:
-                add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=command_cb.new(action=command['action'])))
+                add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=command_cb.new(action='action_core_'+command['action'])))
+            kbd.add(*add_kbd)
 
-        kbd.add(*add_kbd)
+        commands_data = get_printer_commands('custom')
+        if commands_data.success:
+            add_kbd=[]
+            print(commands_data.data)
+            for command in commands_data.data:
+                add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=command_cb.new(action='action_custom_'+command['action'])))
+            kbd.add(*add_kbd)
+
         kbd.row(
                 types.InlineKeyboardButton('Назад', callback_data=command_cb.new(action='kb_show_keyboard')),
             )
@@ -569,16 +578,49 @@ async def callback_reparse_file(query: types.CallbackQuery, callback_data: typin
         else:
             await query.answer("Файл для печати не выбран!")
 
+#action callback
+@dp.callback_query_handler(text_contains='action_')
+async def callback_action_query(query: types.CallbackQuery):
+    await query.answer()
+    source = None
+    command = None
+    if query.data.startswith('id:action_core_'):
+        source = 'core'
+        command = query.data[len('id:action_core_'):]
+
+    if query.data.startswith('id:action_custom_'):
+        source = 'custom'
+        command = query.data[len('id:action_custom_'):]
+    if source != None:
+        commands_data = get_printer_commands(source)
+        for c in commands_data.data:
+            if c['action'] == command:
+                if 'confirm' in c:
+                    print('confirmation for '+c['name']+" "+source+" "+command)
+                    return
+                else:
+                    print('execute command '+c['name']+" "+source+" "+command)
+                    return
+
+    '''commands_data = get_printer_commands('core')
+    if commands_data.success:
+        add_kbd=[]
+        print(commands_data.data)
+        for command in commands_data.data:
+            add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=command_cb.new(action='action_core_'+command['action'])))
+        kbd.add(*add_kbd)
+    print(query.data)'''
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 def repeat(coro, loop):
     asyncio.ensure_future(coro(), loop=loop)
-    loop.call_later(5, repeat, coro, loop)
+    loop.call_later(10, repeat, coro, loop)
 
 if __name__ == '__main__':
     parse_file_for_offsets('nullprint.gcode')
     print(get_current_z_pos_with_range(297))
     loop = asyncio.get_event_loop()
-    loop.call_later(5, repeat, update_printer_status, loop)
+    loop.call_later(10, repeat, update_printer_status, loop)
     executor.start_polling(dp, skip_updates=True)
 
