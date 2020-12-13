@@ -44,6 +44,8 @@ class Print_File_Data:
     start_time = None
     last_z_pos = -1.0
     max_z_pos = -1.0
+    last_z_time = None
+    common_layer_time = None
     file_name = ''
     offsets = {}
 
@@ -80,6 +82,8 @@ def parse_file_for_offsets(name):
     new_file_data.offsets = {}
     new_file_data.file_name = name
     new_file_data.start_time = datetime.now()
+    new_file_data.common_layer_time = None
+    new_file_data.last_z_time = None
     print('Parsing file for offsets: '+ name)
     with open(config.get("main", "filesdir")+name, 'r') as fp:
         for line in fp:
@@ -106,17 +110,23 @@ def parse_file_for_offsets(name):
     print(new_file_data.offsets)
     print('max_Z = '+str(max_z))
 
-#get current Z pos from file
-def get_current_z_pos(offset):
+#get current Z pos from file with layers range
+def get_current_z_pos_with_range(offset):
     global print_file
     if print_file != None:
         #temp pos
         lastkey = None
+        keynum = 0
         for key in print_file.offsets.keys():
             if offset <= key and lastkey != None:
-                return print_file.offsets.get(lastkey,-1)
+                return [print_file.offsets.get(lastkey,-1),keynum,len(print_file.offsets.keys())]
+            keynum+=1
             lastkey = key
-    return -1
+    return [-1,0,0]
+
+#get current Z pos from file
+def get_current_z_pos(offset):
+    return get_current_z_pos_with_range(offset)[0]
 
 #get z position as string with max and percentage
 def get_z_pos_str():
@@ -290,6 +300,9 @@ async def update_printer_status():
             #get current z progress
             _z = get_current_z_pos(job_state.data['progress']['filepos'])
             if _z != print_file.last_z_pos:
+                if print_file.last_z_time != None:
+                    print_file.common_layer_time = datetime.now() - print_file.last_z_time
+                print_file.last_z_time = datetime.now()
                 await send_printer_status(silent = config.getboolean('misc','silent_z_change') )
             print_file.last_z_pos = _z
             if (_z != -1):
@@ -393,16 +406,23 @@ async def send_printer_status(silent = False):
                         msg += '\n'
 
                         msg += '💾Файл: '+job_state.data['job']['file']['name']
-                        if print_file.start_time != None:
-                            msg += '\n⏱ Печать начата: '+print_file.start_time.strftime('%d.%m.%Y %H:%M')
+                        if print_file != None:
+                            if print_file.start_time != None:
+                                msg += '\n⏱ Печать начата: '+print_file.start_time.strftime('%d.%m.%Y %H:%M')
                         if job_state.data['job']['estimatedPrintTime'] != None:
-                            msg += '\n⏱ Примерное время печати: '+user_friendly_seconds(job_state.data['job']['estimatedPrintTime'])
-                        _z = get_current_z_pos(job_state.data['progress']['filepos'])
-                        if _z != -1:
-                            photo_cation ='Высота: '+str(_z) + " / " +str(print_file.max_z_pos) + "мм (" +str(round(100*_z/print_file.max_z_pos,1))+"%)"
-                            msg += '\n🏔'+photo_cation
-                        else:
-                            msg += '\n🏔Высота Z ?'
+                            msg += '\n⏱ Расчетное время печати: '+user_friendly_seconds(job_state.data['job']['estimatedPrintTime'])
+                        _z = get_current_z_pos_with_range(job_state.data['progress']['filepos'])
+
+                        if print_file != None:
+                            if _z[0] != -1:
+                                photo_cation ='Высота: '+str(_z[0]) + " / " +str(print_file.max_z_pos) + "мм " +\
+                                    str(round(100*_z[0]/print_file.max_z_pos,1))+"% Осталось: "+str(round(print_file.max_z_pos-_z[0],2))+"мм"+\
+                                    "\n📚Слой "+str(_z[1]) + " / "+str(_z[2])+" "+str(round(100*_z[1]/_z[2],1))+"% Осталось: "+str(_z[2]-_z[1])
+                                if print_file.common_layer_time != None:
+                                    photo_cation += "\n⏱/📚Время на слой "+str(print_file.common_layer_time)
+                                msg += '\n🏔'+photo_cation
+                            else:
+                                msg += '\n🏔Высота Z ?'
                         if job_state.data['job']['filament'] != None:
                             msg += '\n⛓Израсходуется: '+str(round(job_state.data['job']['filament']['tool0']['length'],2))+' мм / '+str(round(job_state.data['job']['filament']['tool0']['volume'],2))+' см³'
                         tempp = '\n🔄Прогресс: ' + str(job_state.data['progress']['filepos'])+' / ' +\
@@ -547,6 +567,7 @@ def repeat(coro, loop):
 
 if __name__ == '__main__':
     parse_file_for_offsets('nullprint.gcode')
+    print(get_current_z_pos_with_range(297))
     loop = asyncio.get_event_loop()
     loop.call_later(10, repeat, update_printer_status, loop)
     executor.start_polling(dp, skip_updates=True)
