@@ -563,12 +563,12 @@ async def callback_reparse_file(query: types.CallbackQuery, callback_data: typin
 
 def repeat(coro, loop):
     asyncio.ensure_future(coro(), loop=loop)
-    loop.call_later(10, repeat, coro, loop)
+    loop.call_later(5, repeat, coro, loop)
 
 if __name__ == '__main__':
     parse_file_for_offsets('nullprint.gcode')
     print(get_current_z_pos_with_range(297))
     loop = asyncio.get_event_loop()
-    loop.call_later(10, repeat, update_printer_status, loop)
+    loop.call_later(5, repeat, update_printer_status, loop)
     executor.start_polling(dp, skip_updates=True)
 
