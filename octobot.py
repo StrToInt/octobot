@@ -7,6 +7,7 @@ import requests
 import json
 import math
 import pprint
+import traceback
 import re
 from dataclasses import dataclass
 import subprocess
@@ -353,12 +354,30 @@ async def send_information_about_job_action(information, silent = True):
     await bot.send_message(config.get('main','admin'),information)
 
 
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #command /start. show all menus
 @dp.message_handler(commands=['start'])
 async def start_command(message: types.Message):
     if check_user(message.from_user.id):
         await bot.send_message(message.from_user.id,'Выберите действие', reply_markup=get_main_keyboard())
+
+#command /photo. get photo
+@dp.message_handler(commands=['photo'])
+async def photo_command(message: types.Message):
+    if check_user(message.from_user.id):
+        await send_photos(message.from_user.id, silent = False, cap = None)
+
+#command /status. get status
+@dp.message_handler(commands=['status'])
+async def status_command(message: types.Message):
+    if check_user(message.from_user.id):
+        await send_printer_status(silent = False)
+
+#command /actions. get actions
+@dp.message_handler(commands=['actions'])
+async def actions_command(message: types.Message):
+    if check_user(message.from_user.id):
+        await send_actions_keyboard(message.from_user.id)
 
 #echo all
 @dp.message_handler()
@@ -478,7 +497,13 @@ async def send_photos(chat_id, silent = False, cap = None):
             media.attach_photo(types.InputFile('photo'+str(c)+'.jpg'), caption = cap if c == 1 else None)
 
         await bot.send_chat_action(chat_id, action = 'upload_photo')
-        await bot.send_media_group(chat_id,media, disable_notification = silent or config.getboolean('misc','silent') )
+        try:
+            await bot.send_media_group(chat_id,media, disable_notification = silent or config.getboolean('misc','silent') )
+        except Exception as e:
+            traceback.print_exc()
+            await bot.send_message(chat_id, "\nНе удалось отправить фото", reply_markup=get_show_keyboard_button(),\
+                disable_notification = silent or config.getboolean('misc','silent') )
+
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -503,34 +528,38 @@ async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typi
         await query.answer("выберите действие...")
         await start_command(query)
 
+async def send_actions_keyboard(chat_id):
+    kbd = types.InlineKeyboardMarkup().row(
+        types.InlineKeyboardButton('🌋Прогнать файл по высотам Z', callback_data=command_cb.new(action='kb_reparse_file'))
+        )
+    commands_data = get_printer_commands('core')
+    if commands_data.success:
+        add_kbd=[]
+        print(commands_data.data)
+        for command in commands_data.data:
+            add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=command_cb.new(action='action_core_'+command['action'])))
+        kbd.add(*add_kbd)
+
+    commands_data = get_printer_commands('custom')
+    if commands_data.success:
+        add_kbd=[]
+        print(commands_data.data)
+        for command in commands_data.data:
+            add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=command_cb.new(action='action_custom_'+command['action'])))
+        kbd.add(*add_kbd)
+
+    kbd.row(
+            types.InlineKeyboardButton('Назад', callback_data=command_cb.new(action='kb_show_keyboard')),
+        )
+    await bot.send_message(chat_id,'Действия', reply_markup=kbd)
+
+
 #button "show actions"
 @dp.callback_query_handler(command_cb.filter(action='kb_show_actions'))
 async def callback_show_actions_keyboard(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     if check_user(query.message.chat.id):
         await query.answer("выберите действие...")
-        kbd = types.InlineKeyboardMarkup().row(
-            types.InlineKeyboardButton('🌋Прогнать файл по высотам Z', callback_data=command_cb.new(action='kb_reparse_file'))
-            )
-        commands_data = get_printer_commands('core')
-        if commands_data.success:
-            add_kbd=[]
-            print(commands_data.data)
-            for command in commands_data.data:
-                add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=command_cb.new(action='action_core_'+command['action'])))
-            kbd.add(*add_kbd)
-
-        commands_data = get_printer_commands('custom')
-        if commands_data.success:
-            add_kbd=[]
-            print(commands_data.data)
-            for command in commands_data.data:
-                add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=command_cb.new(action='action_custom_'+command['action'])))
-            kbd.add(*add_kbd)
-
-        kbd.row(
-                types.InlineKeyboardButton('Назад', callback_data=command_cb.new(action='kb_show_keyboard')),
-            )
-        await bot.send_message(query.message.chat.id,'Действия', reply_markup=kbd)
+        send_actions_keyboard(query.message.chat.id)
 
 #button "show settings"
 @dp.callback_query_handler(command_cb.filter(action='kb_show_settings'))
