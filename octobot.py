@@ -215,10 +215,10 @@ def get_additional_file_strings():
     info = ''
 
     try:
-        with open('information.txt','r') as fp:
+        with open('information.txt','r',encoding="utf-8") as fp:
             line = fp.readline()
             while line:
-                info += line+"\n"
+                info += line
                 line = fp.readline()
     except:
         return None
@@ -289,12 +289,12 @@ async def update_printer_status():
     if current_state == 'Operational':
         if last_printer_state in ('Closed','Connecting'):
             #printer connected
-            await send_information_about_job_action('Принтер подключен.')
+            await send_information_about_job_action('⏩ Принтер подключен.')
             await send_printer_status()
             print('Printer connected')
         elif last_printer_state in ('Printing','Pausing','Paused','Resuming','Cancelling','Finishing'):
             #print finished
-            await send_information_about_job_action('Печать завершена.')
+            await send_information_about_job_action('⏩ Печать завершена.')
             await send_printer_status()
             print_file = None
             print('Print '+job_state.data['job']['file']['name']+' finished')
@@ -303,13 +303,13 @@ async def update_printer_status():
         if last_printer_state != 'Closed':
             #printer disconnected
             print_file = None
-            await send_information_about_job_action('Принтер отключен')
+            await send_information_about_job_action('⏩ Принтер отключен')
             print('Printer disconnected')
     #Connecting
     elif current_state == 'Connecting':
         if last_printer_state == 'Closed':
             #printer connecting
-            await send_information_about_job_action('Подключение к принтеру')
+            await send_information_about_job_action('⏩ Подключение к принтеру')
             print('Printer connecting')
     #Printing
     elif current_state == 'Printing':
@@ -326,14 +326,14 @@ async def update_printer_status():
                 print('Printing '+job_state.data['job']['file']['name'] + " at "+str(_z))
         elif last_printer_state in ('Paused','Resuming','Pausing'):
             #resumed printing file
-            await send_information_about_job_action('Печать продолжена.')
+            await send_information_about_job_action('⏩ Печать продолжена.')
             await send_printer_status()
             if print_file == None:
                 parse_file_for_offsets(job_state.data['job']['file']['name'])
             print('Print '+job_state.data['job']['file']['name']+' resumed')
         else: #if last_printer_state in ['Operational', 'Closed','Connecting']:
             #start printing file
-            await send_information_about_job_action('Печать запущена. ')
+            await send_information_about_job_action('⏩ Печать запущена. ')
             await send_printer_status()
             print('Start printing '+job_state.data['job']['file']['name'])
             parse_file_for_offsets(job_state.data['job']['file']['name'])
@@ -341,7 +341,7 @@ async def update_printer_status():
     elif current_state == 'Paused':
         if last_printer_state in ('Pausing','Operational'):
             #print paused
-            await send_information_about_job_action('Печать приостановлена.')
+            await send_information_about_job_action('⏩ Печать приостановлена.')
             await send_printer_status()
             if print_file == None:
                 parse_file_for_offsets(job_state.data['job']['file']['name'])
@@ -350,7 +350,7 @@ async def update_printer_status():
     elif current_state == 'Pausing':
         if last_printer_state != 'Pausing':
             #print pausing
-            await send_information_about_job_action('Печать ставится на паузу.')
+            await send_information_about_job_action('⏩ Печать ставится на паузу.')
             await send_printer_status()
             if print_file == None:
                 parse_file_for_offsets(job_state.data['job']['file']['name'])
@@ -359,7 +359,7 @@ async def update_printer_status():
     elif current_state == 'Cancelling':
         if last_printer_state != 'Cancelling':
             #print cancelling
-            await send_information_about_job_action('Печать отменяется.')
+            await send_information_about_job_action('⏩ Печать отменяется.')
             await send_printer_status()
             print('Print '+job_state.data['job']['file']['name']+' cancelling')
     last_printer_state = current_state
@@ -405,8 +405,9 @@ async def get_printer_status_string():
     connection_status = get_printer_connection_status()
     msg = datetime.now().strftime('%d.%m.%Y %H:%M')+'\n'
     if connection_status.success:
-        if connection_status.state == 'Closed':
+        if connection_status.state in ['Closed','Offline']:
             msg += '❌ Принтер выключен'
+            print('11111')
         else:
             msg += '✅ Принтер включен\n'
             printer_state = get_printer_state()
@@ -468,16 +469,24 @@ async def get_printer_status_string():
                         msg += '\n⏰ Осталось: '+user_friendly_seconds(job_state.data['progress']['printTimeLeft'])
                         time_end = datetime.now() + timedelta(seconds = job_state.data['progress']['printTimeLeft'])
                         msg += '\n⏰ Закончится: '+time_end.strftime('%d.%m.%Y %H:%M')
-                        add_info = get_additional_file_strings()
-                        if add_info != None:
-                            msg += '\n'+add_info
                     else:
                         msg += '🆘Ошибка получения данных о печати'
             else:
                 msg += '🆘Ошибка получения данных о статусе'
+
+            add_info = get_additional_file_strings()
+            if add_info != None:
+                msg += '\n'+add_info
+
             return [1,msg]
+
+        add_info = get_additional_file_strings()
+        if add_info != None:
+            msg += '\n'+add_info
+        return [1,msg]
     else:
         return [0,connection_status.errorCode]
+
     return [-1,'']
 
 
@@ -487,13 +496,12 @@ async def send_printer_status(silent = False):
     status = await get_printer_status_string()
     if status[0] == -1:
         pass
-        #await bot.send_message(chat_id, 'Подключение к OCTOPRINT не удалось', reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
+        await bot.send_message(chat_id, 'Подключение к OCTOPRINT не удалось', reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
     elif status[0] == 0:
         pass
-        #await bot.send_message(chat_id, 'Ошибка получения статуса!\n Код ответа: '+status[1], reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
+        await bot.send_message(chat_id, 'Ошибка получения статуса!\n Код ответа: '+status[1], reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
     else:
         #send message if all success
-
         if  config.getint('printer','cam_count') > 0:
             await send_photos(chat_id,silent,None)
 
