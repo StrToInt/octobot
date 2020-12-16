@@ -1,0 +1,5 @@
+#chamber top:24.5°C
+#ambient/electronics:27.312°C
+#coldend:25.125°C
+#extruder:25.375°C
+#chabmer bottom:28.187°C

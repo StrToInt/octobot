@@ -211,6 +211,20 @@ def get_smile_for_boolean(inp):
 def get_smile_for_boolean_str(inp):
     return 'вкл' if inp == True else 'выкл'
 
+def get_additional_file_strings():
+    info = ''
+
+    try:
+        with open('information.txt','r') as fp:
+            line = fp.readline()
+            while line:
+                info += line+"\n"
+                line = fp.readline()
+    except:
+        return None
+
+    return info
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def make_photo():
     subprocess.call("bash photo.sh", shell=True)
@@ -454,6 +468,9 @@ async def get_printer_status_string():
                         msg += '\n⏰ Осталось: '+user_friendly_seconds(job_state.data['progress']['printTimeLeft'])
                         time_end = datetime.now() + timedelta(seconds = job_state.data['progress']['printTimeLeft'])
                         msg += '\n⏰ Закончится: '+time_end.strftime('%d.%m.%Y %H:%M')
+                        add_info = get_additional_file_strings()
+                        if add_info != None:
+                            msg += '\n'+add_info
                     else:
                         msg += '🆘Ошибка получения данных о печати'
             else:

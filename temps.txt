@@ -1,0 +1,5 @@
+#chamber top:|24500
+#ambient/electronics:|27312
+#coldend:|25125
+#extruder:|25375
+#chabmer bottom:|28187
