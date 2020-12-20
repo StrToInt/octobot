@@ -9,6 +9,7 @@ import math
 import pprint
 import traceback
 import re
+import os
 from dataclasses import dataclass
 import subprocess
 import asyncio
@@ -112,6 +113,13 @@ def parse_file_for_offsets(name):
     print_file = new_file_data
     print(new_file_data.offsets)
     print('max_Z = '+str(max_z))
+
+#get file size
+def get_file_size(path):
+    try:
+        return os.path.getsize(path)
+    except:
+        return -1
 
 #get current Z pos from file with layers range
 def get_current_z_pos_with_range(offset):
@@ -526,21 +534,29 @@ async def send_printer_status(silent = False):
 
         await bot.send_message(chat_id, status[1], reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
 
+def get_image_path(path):
+    size = get_file_size(path)
+    if size <= 0:
+        return 'noimage.jpeg'
+    else:
+        return path
+
 async def send_photos(chat_id, silent = False, cap = None):
     make_photo()
     cam_count = config.getint('printer','cam_count')
     print(f'Make photo from {cam_count} cameras')
     if cam_count == 1:
-        with open('photo.jpg', 'rb') as photo:
+        with open(get_image_path('photo.jpg'), 'rb') as photo:
             await bot.send_chat_action(chat_id, action = 'upload_photo')
             await bot.send_photos(chat_id,photo, caption = cap, reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent_photos') )
     else:
         media = types.MediaGroup()
         for c in range(1,cam_count+1):
             print(f'Attach photo from #{c} camera')
-            media.attach_photo(types.InputFile('photo'+str(c)+'.jpg'), caption = cap if c == 1 else None)
+            media.attach_photo(types.InputFile(get_image_path('photo'+str(c)+'.jpg')), caption = cap if c == 1 else None)
 
         await bot.send_chat_action(chat_id, action = 'upload_photo')
+
         try:
             await bot.send_media_group(chat_id,media, disable_notification = silent or config.getboolean('misc','silent') )
         except Exception as e:
