@@ -57,6 +57,7 @@ dp = Dispatcher(bot)
 
 last_printer_state = 'Closed'
 print_file: Print_File_Data = None
+last_msg = None
 
 command_cb = CallbackData('id','action')  # post:<id>:<action>
 
@@ -186,6 +187,24 @@ def get_printer_job_state():
         job_state.success = False
     finally:
         return job_state
+
+
+#execute command
+async def execute_command(path):
+    print('Execute command '+ '/api/system/commands/'+path)
+    result = Printer_State()
+    try:
+        r = requests.post(url = config.get("main", "octoprint")+'/api/system/commands/'+path, headers = {'X-Api-Key':config.get("main", "key")},timeout=3)
+        if r.status_code == 204:
+            result.success = True
+        else:
+            result.errorCode = str(r.status_code)
+            result.success = False
+    except Exception:
+        traceback.print_exc()
+        result.success = False
+    finally:
+        return result
 
 #get printer registered commands
 def get_printer_commands(source = 'core'):
@@ -530,6 +549,17 @@ async def send_photos(chat_id, silent = False, cap = None):
                 disable_notification = silent or config.getboolean('misc','silent') )
 
 
+async def delete_last_msg():
+    global last_msg
+    if last_msg != None:
+        try:
+            await bot.delete_message(last_msg.chat.id,last_msg.message_id)
+        except:
+            pass
+        finally:
+            last_msg = None
+
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 #button "status"
@@ -576,7 +606,8 @@ async def send_actions_keyboard(chat_id):
     kbd.row(
             types.InlineKeyboardButton('Назад', callback_data=command_cb.new(action='kb_show_keyboard')),
         )
-    await bot.send_message(chat_id,'Действия', reply_markup=kbd)
+    global last_msg
+    last_msg = await bot.send_message(chat_id,'Действия', reply_markup=kbd)
 
 
 #button "show actions"
@@ -635,35 +666,69 @@ async def callback_reparse_file(query: types.CallbackQuery, callback_data: typin
 #action callback
 @dp.callback_query_handler(text_contains='action_')
 async def callback_action_query(query: types.CallbackQuery):
-    await query.answer()
-    source = None
-    command = None
-    if query.data.startswith('id:action_core_'):
-        source = 'core'
-        command = query.data[len('id:action_core_'):]
+    if check_user(query.message.chat.id):
+        await query.answer()
+        source = None
+        command = None
 
-    if query.data.startswith('id:action_custom_'):
-        source = 'custom'
-        command = query.data[len('id:action_custom_'):]
-    if source != None:
-        commands_data = get_printer_commands(source)
-        for c in commands_data.data:
-            if c['action'] == command:
-                if 'confirm' in c:
-                    print('confirmation for '+c['name']+" "+source+" "+command)
-                    return
+        global last_msg
+
+        if query.data.startswith('id:action_core_'):
+            source = 'core'
+            command = query.data[len('id:action_core_'):]
+
+        if query.data.startswith('id:action_custom_'):
+            source = 'custom'
+            command = query.data[len('id:action_custom_'):]
+
+        if source != None:
+            commands_data = get_printer_commands(source)
+            for c in commands_data.data:
+                if c['action'] == command:
+                    if 'confirm' in c:
+                        kbd = types.InlineKeyboardMarkup().row(
+                            types.InlineKeyboardButton('Выполнить', callback_data=command_cb.new(action='actionexecute|'+source+"|"+command)),
+                            types.InlineKeyboardButton('Отменить', callback_data=command_cb.new(action='actionexecute|'+'cancel'))
+                            )
+
+                        await delete_last_msg()
+                        last_msg = await bot.send_message(query.message.chat.id,'Запрос на выполнение команды:\n"'+c['confirm']+'"', reply_markup=kbd)
+                        print('confirmation for '+c['name']+" "+source+" "+command)
+                        return
+                    else:
+                        await delete_last_msg()
+                        result = await execute_command(source+"/"+command)
+
+                        if result.success == True:
+                            await bot.send_message(query.message.chat.id,"Команда "+c['name'] + " выполнена")
+                        else:
+                            await bot.send_message(query.message.chat.id,"Команда "+c['name']+' (' +source+"/"+command+ ") не выполнена\nКод ошибки:"+result.errorCode)
+
+                        print('execute command '+c['name']+" "+source+" "+command)
+                        return
+
+#action callback
+@dp.callback_query_handler(text_contains='actionexecute|')
+async def callback_action_query(query: types.CallbackQuery):
+    if check_user(query.message.chat.id):
+        await query.answer()
+        global last_msg
+
+        if query.data.startswith('id:actionexecute|'):
+            data = query.data.split('|')
+            print(data)
+            if len(data) == 3:
+                await delete_last_msg()
+
+                result = await execute_command(data[1]+'/'+data[2])
+
+                if result.success == True:
+                    await bot.send_message(query.message.chat.id,"Команда "+data[1]+'/'+data[2] + " выполнена")
                 else:
-                    print('execute command '+c['name']+" "+source+" "+command)
-                    return
-
-    '''commands_data = get_printer_commands('core')
-    if commands_data.success:
-        add_kbd=[]
-        print(commands_data.data)
-        for command in commands_data.data:
-            add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=command_cb.new(action='action_core_'+command['action'])))
-        kbd.add(*add_kbd)
-    print(query.data)'''
+                    await bot.send_message(query.message.chat.id,"Команда "+data[1]+'/'+data[2] + " не выполнена\nКод ошибки:"+result.errorCode)
+                print('execute command '+data[1]+' '+data[2])
+            elif len(data) == 2 and data[1] == 'cancel':
+                await delete_last_msg()
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -677,4 +742,5 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.call_later(10, repeat, update_printer_status, loop)
     executor.start_polling(dp, skip_updates=True)
+    print('Goodbye')
 
