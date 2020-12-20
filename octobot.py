@@ -194,7 +194,7 @@ async def execute_command(path):
     print('Execute command '+ '/api/system/commands/'+path)
     result = Printer_State()
     try:
-        r = requests.post(url = config.get("main", "octoprint")+'/api/system/commands/'+path, headers = {'X-Api-Key':config.get("main", "key")},timeout=3)
+        r = requests.post(url = config.get("main", "octoprint")+'/api/system/commands/'+path, headers = {'X-Api-Key':config.get("main", "key")},timeout=8)
         if r.status_code == 204:
             result.success = True
         else:
@@ -615,7 +615,7 @@ async def send_actions_keyboard(chat_id):
 async def callback_show_actions_keyboard(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     if check_user(query.message.chat.id):
         await query.answer("выберите действие...")
-        send_actions_keyboard(query.message.chat.id)
+        await send_actions_keyboard(query.message.chat.id)
 
 #button "show settings"
 @dp.callback_query_handler(command_cb.filter(action='kb_show_settings'))
