@@ -675,6 +675,22 @@ async def callback_show_settings(query: types.CallbackQuery, callback_data: typi
         await query.answer("Настройки")
         await bot.send_message(query.message.chat.id,'Настройки', reply_markup=get_settings_keyboard())
 
+#button "print"
+@dp.callback_query_handler(command_cb.filter(action='kb_print'))
+async def callback_show_settings(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+    if check_user(query.message.chat.id):
+        await query.answer("Меню печати")
+        kbd = types.InlineKeyboardMarkup().row(
+            types.InlineKeyboardButton('⏸ Начать', callback_data=command_cb.new(action='kb_print_start')),
+            types.InlineKeyboardButton('⏯ Пауза', callback_data=command_cb.new(action='kb_print_start')),
+            types.InlineKeyboardButton('▶️Продолжить', callback_data=command_cb.new(action='kb_print_start')),
+        ).row(
+            types.InlineKeyboardButton('❌ Отменить', callback_data=command_cb.new(action='kb_print_start'))
+        ).row(
+            types.InlineKeyboardButton('🖋Кастомная команда', callback_data=command_cb.new(action='kb_print_start'))
+        )
+        await bot.send_message(query.message.chat.id,'Настройки', reply_markup=kbd)
+
 #button "silent mode toggle"
 @dp.callback_query_handler(command_cb.filter(action='kb_silent_toggle'))
 async def callback_silent_mode_toggle(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
