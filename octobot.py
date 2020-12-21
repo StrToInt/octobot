@@ -214,6 +214,41 @@ async def execute_command(path):
     finally:
         return result
 
+
+#execute command
+async def execute_job_command(command):
+    print('Execute job command: '+command)
+    result = Printer_State()
+    try:
+        r = requests.post(url = config.get("main", "octoprint")+'/job/command', json = {'command': command}, headers = {'X-Api-Key':config.get("main", "key")},timeout=8)
+        if r.status_code == 204:
+            result.success = True
+        else:
+            result.errorCode = str(r.status_code)
+            result.success = False
+    except Exception:
+        traceback.print_exc()
+        result.success = False
+    finally:
+        return result
+
+#execute gcode
+async def execute_gcode(commands):
+    print('Execute gcode command: '+command)
+    result = Printer_State()
+    try:
+        r = requests.post(url = config.get("main", "octoprint")+'/api/printer/command',json = {'commands':commands}, headers = {'X-Api-Key':config.get("main", "key")},timeout=8)
+        if r.status_code == 204:
+            result.success = True
+        else:
+            result.errorCode = str(r.status_code)
+            result.success = False
+    except Exception:
+        traceback.print_exc()
+        result.success = False
+    finally:
+        return result
+
 #get printer registered commands
 def get_printer_commands(source = 'core'):
     printer_commands = Printer_State()
@@ -678,6 +713,45 @@ async def callback_reparse_file(query: types.CallbackQuery, callback_data: typin
             await bot.send_message(query.message.chat.id,'Высоты по файлу '+job_state.data['job']['file']['name']+' обновлены')
         else:
             await query.answer("Файл для печати не выбран!")
+
+#button "stop request"
+@dp.callback_query_handler(command_cb.filter(action='kb_stop_request'))
+async def callback_reparse_file(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+    if check_user(query.message.chat.id):
+        kbd = types.InlineKeyboardMarkup().row(
+            types.InlineKeyboardButton('❌ Остановить', callback_data=command_cb.new(action='kb_stop_stop')),
+            types.InlineKeyboardButton('📛Выключить', callback_data=command_cb.new(action='kb_stop_shutdown')),
+            types.InlineKeyboardButton('❎ Продолжить', callback_data=command_cb.new(action='kb_stop_cancel'))
+            )
+
+        last_msg = await bot.send_message(query.message.chat.id,'Запрос на выполнение команды:\n"'+c['confirm']+'"', reply_markup=kbd)
+
+#button "stop request"
+@dp.callback_query_handler(command_cb.filter(action='kb_stop_cancel'))
+async def callback_reparse_file(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+    if check_user(query.message.chat.id):
+        await delete_last_msg()
+
+#button "stop request"
+@dp.callback_query_handler(command_cb.filter(action='kb_stop_stop'))
+async def callback_reparse_file(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+    if check_user(query.message.chat.id):
+        await delete_last_msg()
+        await execute_gcode(['G91','G0 Z10'])
+
+        result = execute_job_command('cancel')
+        if result.success:
+            await bot.send_message(query.message.chat.id,'Остановка печати...')
+        else:
+            await bot.send_message(query.message.chat.id,'Не удалось остановить печать,\nкод ошибки: '+result.errorCode)
+
+#button "stop request"
+@dp.callback_query_handler(command_cb.filter(action='kb_stop_shutdown'))
+async def callback_reparse_file(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+    if check_user(query.message.chat.id):
+        await delete_last_msg()
+        await bot.send_message(query.message.chat.id,'Остановка принтера...')
+        result = execute_job_command(config.get("printer", "stop_command"))
 
 #action callback
 @dp.callback_query_handler(text_contains='action_')
