@@ -1,0 +1,1106 @@
+зум ptz?zoom=3
+качество видео /settings/quality?set=8
+выдержка /settings/exposure?set=6 /settings/exposure?set=-8
+фокус /nofocus /focus
+фонарик /enabletorch /disabletorch
+
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/ptz?zoom=33", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/ptz?zoom=90", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/ptz?zoom=0", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/quality?set=100", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/quality?set=14", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/exposure?set=12", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/exposure?set=-12", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/exposure?set=-1", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/exposure?set=0", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/focus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/nofocus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/enabletorch", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/disabletorch", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/overlay?set=on", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/overlay?set=off", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/night_vision?set=on", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/night_vision?set=off", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/ffc?set=on", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/ic_switch_camera_front_normal.png", {
+  "headers": {
+    "accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/ic_switch_camera_back_normal.png", {
+  "headers": {
+    "accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/ic_switch_camera_back_normal.png", {
+  "headers": {
+    "accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/ic_switch_camera_front_normal.png", {
+  "headers": {
+    "accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/ffc?set=off", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/night_vision_gain?set=16.25", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/night_vision_gain?set=0.25", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/night_vision_average?set=5", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/night_vision_average?set=1", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/photo_size?set=4160x3120", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/photo_size?set=4160x2340", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/photo_size?set=4000x3000", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/photo_size?set=2976x2976", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/photo_size?set=1024x768", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/focusmode?set=auto", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/focusmode?set=infinity", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/focusmode?set=fixed", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/focusmode?set=macro", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/focusmode?set=continuous-video", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/focusmode?set=continuous-picture", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/focusmode?set=manual", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/whitebalance?set=auto", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/whitebalance?set=incandescent", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/whitebalance?set=fluorescent", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/whitebalance?set=warm-fluorescent", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/whitebalance?set=daylight", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/whitebalance?set=cloudy-daylight", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/whitebalance?set=twilight", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/whitebalance?set=shade", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/whitebalance?set=manual", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/antibanding?set=off", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/antibanding?set=60hz", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/antibanding?set=50hz", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/antibanding?set=auto", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/exposure_lock?set=on", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/exposure_lock?set=off", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/whitebalance_lock?set=on", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/settings/whitebalance_lock?set=off", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+}); ;
+fetch("http://192.168.1.75:8080/videostatus", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "http://192.168.1.75:8080/",
+  "referrerPolicy": "no-referrer-when-downgrade",
+  "body": null,
+  "method": "GET",
+  "mode": "cors"
+});
