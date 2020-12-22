@@ -1,0 +1,21 @@
+main:
+  admin: 148861643
+  filesdir: null
+  key: 17D2725AF03C4F6999ED90B0ADFAD319
+  octoprint: http://192.168.1.30:5000
+  token: 1015881710:AAGKiE50pfMX6gUj30Mk-MTfgp1Hox724sU
+misc:
+  silent: false
+  silent_photos: true
+  silent_z_change: true
+printer:
+  cam_count: 2
+  cameras:
+  - Mi5:
+      method: url
+      photo_url: http://192.168.1.75:8080/photoaf.jpg
+      ptz_controls: true
+      url: http://192.168.1.75:5000
+  extruders: 1
+  max_z_finish: 230
+  stop_command: custom/shutdown

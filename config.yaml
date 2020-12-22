@@ -1,0 +1,32 @@
+main:
+  admin: 148861643
+  filesdir: null
+  key: 17D2725AF03C4F6999ED90B0ADFAD319
+  octoprint: http://192.168.1.30:5000
+  token: 1015881710:AAGKiE50pfMX6gUj30Mk-MTfgp1Hox724sU
+misc:
+  silent: false
+  silent_photos: true
+  silent_z_change: true
+printer:
+  cam_count: 2
+  cameras:
+  - Mi5:
+      photo_url: /photoaf.jpg
+      ptz_controls: true
+      type: android_ipwebcam
+      url: http://192.168.1.75:5000
+      video_url: /video
+  - M2Mini:
+      photo_url: /photoaf.jpg
+      ptz_controls: true
+      type: android_ipwebcam
+      url: http://192.168.1.159:5000
+      video_url: /video
+  - usbcam:
+      file_path: usbcam.jpg
+      script: photo.sh
+      type: shell_script_image
+  extruders: 1
+  max_z_finish: 230
+  stop_command: custom/shutdown

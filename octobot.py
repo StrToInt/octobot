@@ -16,22 +16,163 @@ import asyncio
 from datetime import datetime, timedelta
 from threading import Thread
 
+from settings import OctobotSettings
+from commands import OctobotCommands
+
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import ParseMode
 from aiogram.utils.callback_data import CallbackData
+from utils import utils
+from utils import Printer_Connection,Printer_State,Print_File_Data
 
-logging.basicConfig(level=logging.INFO)
-log = logging.getLogger('broadcast')
 
-#config++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+class Octobot:
 
-@dataclass
-class octobot_config:
-    token: str
-    key: str
-    admin: str
-    octoprint: str
-    filesdir: str
+    def __init__(self):
+        logging.basicConfig(level=logging.INFO)
+        log = logging.getLogger('broadcast')
+
+
+        self.__command_cb = CallbackData('id','action')
+        self.__settings = OctobotSettings('config.yaml')
+        self.__bot = Bot(self.__settings.get_bot_token())
+        self.__dispatcher = Dispatcher(self.__bot)
+        self.__commands_module = OctobotCommands(self, self.__bot, self.__dispatcher, self.__settings)
+        self.__print_file = None
+
+    def get_dispatcher(self):
+        return self.__dispatcher
+
+    def get_bot(self):
+        return self.__bot
+
+    def get_settings(self):
+        return self.__settings
+
+
+    #boolean smile
+    def get_smile_for_boolean(self, inp):
+        return '✅' if inp == True else '❌'
+
+    #boolean on/off
+    def get_smile_for_boolean_str(self, inp):
+        return 'вкл' if inp == True else 'выкл'
+
+    def get_additional_file_strings(self):
+        info = ''
+
+        try:
+            with open('information.txt','r',encoding="utf-8") as fp:
+                line = fp.readline()
+                while line:
+                    info += line
+                    line = fp.readline()
+        except:
+            return None
+        return info
+
+    #get file size
+    @staticmethod
+    def get_file_size(path):
+        try:
+            return os.path.getsize(path)
+        except:
+            return -1
+
+    @staticmethod
+    def get_image_path(path):
+        size = get_file_size(path)
+        if size <= 0:
+            return 'noimage.jpeg'
+        else:
+            return path
+
+    async def send_photos(self, chat_id, silent = False, cap = None):
+        make_photo()
+        cam_count = config.getint('printer','cam_count')
+        print(f'Make photo from {cam_count} cameras')
+        if cam_count == 1:
+            with open(get_image_path('photo.jpg'), 'rb') as photo:
+                await bot.send_chat_action(chat_id, action = 'upload_photo')
+                await bot.send_photos(chat_id,photo, caption = cap, reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent_photos') )
+        else:
+            media = types.MediaGroup()
+            for c in range(1,cam_count+1):
+                print(f'Attach photo from #{c} camera')
+                media.attach_photo(types.InputFile(get_image_path('photo'+str(c)+'.jpg')), caption = cap if c == 1 else None)
+
+            await bot.send_chat_action(chat_id, action = 'upload_photo')
+
+            try:
+                await bot.send_media_group(chat_id,media, disable_notification = silent or config.getboolean('misc','silent') )
+            except Exception as e:
+                traceback.print_exc()
+                await bot.send_message(chat_id, "\nНе удалось отправить фото", reply_markup=get_show_keyboard_button(),\
+                    disable_notification = silent or config.getboolean('misc','silent') )
+
+
+
+
+
+    #send printer status
+    async def send_printer_status(self, silent = False):
+        chat_id = self.__settings.get_admin()
+        status = await self.get_printer_status_string()
+        if status[0] == -1:
+            pass
+            await bot.send_message(chat_id, 'Подключение к OCTOPRINT не удалось', reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
+        elif status[0] == 0:
+            pass
+            await bot.send_message(chat_id, 'Ошибка получения статуса!\n Код ответа: '+status[1], reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
+        else:
+            #send message if all success
+            if  config.getint('printer','cam_count') > 0:
+                await send_photos(chat_id,silent,None)
+
+            await bot.send_message(chat_id, status[1], reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
+
+
+    async def delete_last_msg(self):
+        global last_msg
+        if last_msg != None:
+            try:
+                await bot.delete_message(last_msg.chat.id,last_msg.message_id)
+            except:
+                pass
+            finally:
+                last_msg = None
+
+
+    async def send_actions_keyboard(self, chat_id):
+        kbd = types.InlineKeyboardMarkup().row(
+            types.InlineKeyboardButton('🌋Прогнать файл по высотам Z', callback_data=command_cb.new(action='kb_reparse_file'))
+            )
+        commands_data = get_printer_commands('core')
+        if commands_data.success:
+            add_kbd=[]
+            print(commands_data.data)
+            for command in commands_data.data:
+                add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=command_cb.new(action='action_core_'+command['action'])))
+            kbd.add(*add_kbd)
+
+        commands_data = get_printer_commands('custom')
+        if commands_data.success:
+            add_kbd=[]
+            print(commands_data.data)
+            for command in commands_data.data:
+                add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=command_cb.new(action='action_custom_'+command['action'])))
+            kbd.add(*add_kbd)
+
+        kbd.row(
+                types.InlineKeyboardButton('Назад', callback_data=command_cb.new(action='kb_show_keyboard')),
+            )
+        global last_msg
+        last_msg = await bot.send_message(chat_id,'Действия', reply_markup=kbd)
+
+
+
+#config++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -42,19 +183,11 @@ def config_write():
         config.write(config_file)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-@dataclass
-class Print_File_Data:
-    start_time = None
-    last_z_pos = -1.0
-    max_z_pos = -1.0
-    last_z_time = None
-    common_layer_time = None
-    file_name = ''
-    offsets = {}
 
 
-bot = Bot(token=config.get("main", "token"))
-dp = Dispatcher(bot)
+
+bot = None
+dp = None
 
 last_printer_state = 'Closed'
 print_file: Print_File_Data = None
@@ -63,250 +196,12 @@ last_msg = None
 command_cb = CallbackData('id','action')  # post:<id>:<action>
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-@dataclass
-class Printer_Connection:
-    errorCode: str = '-1'
-    success: bool = False
-    state: str = 'Closed'
-
-@dataclass
-class Printer_State:
-    errorCode: str = '-1'
-    success: bool = False
-    data: str = ''
-
-#parse file for Z offsets
-def parse_file_for_offsets(name):
-    global print_file
-    file_pos = 0
-    print_file = None
-    max_z = -1.0
-    max_z_finish = float(config.get('printer','max_z_finish'))
-    new_file_data = Print_File_Data()
-    new_file_data.offsets = {}
-    new_file_data.file_name = name
-    new_file_data.start_time = datetime.now()
-    new_file_data.common_layer_time = None
-    new_file_data.last_z_time = None
-    print('Parsing file for offsets: '+ name)
-    with open(config.get("main", "filesdir")+name, 'r') as fp:
-        for line in fp:
-            last_offset = file_pos
-
-            m = re.search(r"(?<=Z)\d+\.\d+", line)
-            file_pos += len(line)
-            if m:
-                res_text = m.group(0)
-                res = float(res_text) #resulted Z pos
-                try:
-                    if res > max_z:
-                        if max_z_finish != -1.0:
-                            if res < max_z_finish:
-                                max_z = res
-                        else:
-                            max_z = res
-                except Exception:
-                    pass
-
-                new_file_data.offsets.update({file_pos+len(res_text):res})
-    new_file_data.max_z_pos = max_z
-    print_file = new_file_data
-    print(new_file_data.offsets)
-    print('max_Z = '+str(max_z))
-
-#get file size
-def get_file_size(path):
-    try:
-        return os.path.getsize(path)
-    except:
-        return -1
-
-#get current Z pos from file with layers range
-def get_current_z_pos_with_range(offset):
-    global print_file
-    if print_file != None:
-        #temp pos
-        lastkey = None
-        keynum = 0
-        for key in print_file.offsets.keys():
-            if offset <= key and lastkey != None:
-                return [print_file.offsets.get(lastkey,-1),keynum,len(print_file.offsets.keys())]
-            keynum+=1
-            lastkey = key
-    return [-1,0,0]
-
-#get current Z pos from file
-def get_current_z_pos(offset):
-    return get_current_z_pos_with_range(offset)[0]
-
-#get z position as string with max and percentage
-def get_z_pos_str():
-    return
-
-#get printer status
-def get_printer_connection_status():
-    status = Printer_Connection()
-    try:
-        r = requests.get(url = config.get("main", "octoprint")+'/api/connection', headers = {'X-Api-Key':config.get("main", "key")}, timeout=3)
-        if r.status_code == 200:
-            json_data = json.loads(r.text)
-            status.state = json_data['current']['state']
-            status.success = True
-        else:
-            status.errorCode = str(r.status_code)
-            status.success = False
-    except Exception:
-        status.success = False
-    finally:
-        return status
-
-#get printer state when connected
-def get_printer_state():
-    state = Printer_State()
-    try:
-        r = requests.get(url = config.get("main", "octoprint")+'/api/printer', headers = {'X-Api-Key':config.get("main", "key")},timeout=3)
-        if r.status_code == 200:
-            state.data = json.loads(r.text)
-            state.success = True
-        else:
-            state.errorCode = str(r.status_code)
-            state.success = False
-    except Exception:
-        state.success = False
-    finally:
-        return state
-
-#get job state when printing
-def get_printer_job_state():
-    job_state = Printer_State()
-    try:
-        r = requests.get(url = config.get("main", "octoprint")+'/api/job', headers = {'X-Api-Key':config.get("main", "key")},timeout=3)
-        if r.status_code == 200:
-            job_state.data = json.loads(r.text)
-            if job_state.data['progress']['printTime'] == None:
-                job_state.data['progress']['printTime'] = -1
-            if job_state.data['progress']['printTimeLeft'] == None:
-                job_state.data['progress']['printTimeLeft'] = -1
-            job_state.success = True
-        else:
-            job_state.errorCode = str(r.status_code)
-            job_state.success = False
-    except Exception:
-        job_state.success = False
-    finally:
-        return job_state
-
-
-#execute command
-async def execute_command(path):
-    print('Execute command '+ '/api/system/commands/'+path)
-    result = Printer_State()
-    try:
-        r = requests.post(url = config.get("main", "octoprint")+'/api/system/commands/'+path, headers = {'X-Api-Key':config.get("main", "key")},timeout=8)
-        if r.status_code == 204:
-            result.success = True
-        else:
-            result.errorCode = str(r.status_code)
-            result.success = False
-    except Exception:
-        traceback.print_exc()
-        result.success = False
-    finally:
-        return result
-
-
-#execute command
-async def execute_job_command(command):
-    print('Execute job command: '+command)
-    result = Printer_State()
-    try:
-        r = requests.post(url = config.get("main", "octoprint")+'/job/command', json = {'command': command}, headers = {'X-Api-Key':config.get("main", "key")},timeout=8)
-        if r.status_code == 204:
-            result.success = True
-        else:
-            result.errorCode = str(r.status_code)
-            result.success = False
-    except Exception:
-        traceback.print_exc()
-        result.success = False
-    finally:
-        return result
-
-#execute gcode
-async def execute_gcode(commands):
-    print('Execute gcode command: '+command)
-    result = Printer_State()
-    try:
-        r = requests.post(url = config.get("main", "octoprint")+'/api/printer/command',json = {'commands':commands}, headers = {'X-Api-Key':config.get("main", "key")},timeout=8)
-        if r.status_code == 204:
-            result.success = True
-        else:
-            result.errorCode = str(r.status_code)
-            result.success = False
-    except Exception:
-        traceback.print_exc()
-        result.success = False
-    finally:
-        return result
-
-#get printer registered commands
-def get_printer_commands(source = 'core'):
-    printer_commands = Printer_State()
-    try:
-        r = requests.get(url = config.get("main", "octoprint")+'/api/system/commands/'+source, headers = {'X-Api-Key':config.get("main", "key")},timeout=2)
-        if r.status_code == 200:
-            printer_commands.data = json.loads(r.text)
-            printer_commands.success = True
-        else:
-            printer_commands.errorCode = str(r.status_code)
-            printer_commands.success = False
-    except Exception:
-        printer_commands.success = False
-    finally:
-        return printer_commands
-
-#boolean smile
-def get_smile_for_boolean(inp):
-    return '✅' if inp == True else '❌'
-
-#boolean on/off
-def get_smile_for_boolean_str(inp):
-    return 'вкл' if inp == True else 'выкл'
-
-def get_additional_file_strings():
-    info = ''
-
-    try:
-        with open('information.txt','r',encoding="utf-8") as fp:
-            line = fp.readline()
-            while line:
-                info += line
-                line = fp.readline()
-    except:
-        return None
-
-    return info
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def make_photo():
     subprocess.call("bash photo.sh", shell=True)
 
-def check_user(user_id):
-    if str(user_id) == config.get("main", "admin"):
-        return True
-    else:
-        return False
 
-def get_main_keyboard():
-    return types.InlineKeyboardMarkup().row(
-        types.InlineKeyboardButton('❔ Статус', callback_data=command_cb.new(action='kb_status')),
-        types.InlineKeyboardButton('📸Фото', callback_data=command_cb.new(action='kb_photo')),
-        types.InlineKeyboardButton('🖨Печать...', callback_data=command_cb.new(action='kb_print')),
-    ).add(types.InlineKeyboardButton('📛STOP', callback_data=command_cb.new(action='kb_stop_request'))).row(
-        types.InlineKeyboardButton('� Настройки', callback_data=command_cb.new(action='kb_show_settings')),
-        types.InlineKeyboardButton(get_smile_for_boolean(config.getboolean('misc','silent'))+' Silent', callback_data=command_cb.new(action='kb_silent_toggle')),
-        types.InlineKeyboardButton('📲Действия', callback_data=command_cb.new(action='kb_show_actions')),
-    )
 
 
 def get_settings_keyboard():
@@ -429,186 +324,10 @@ async def update_printer_status():
 async def send_information_about_job_action(information, silent = True):
     await bot.send_message(config.get('main','admin'),information)
 
-
+'''
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#command /start. show all menus
-@dp.message_handler(commands=['start'])
-async def start_command(message: types.Message):
-    if check_user(message.from_user.id):
-        await bot.send_message(message.from_user.id,'Выберите действие', reply_markup=get_main_keyboard())
-
-#command /photo. get photo
-@dp.message_handler(commands=['photo'])
-async def photo_command(message: types.Message):
-    if check_user(message.from_user.id):
-        await send_photos(message.from_user.id, silent = False, cap = None)
-
-#command /status. get status
-@dp.message_handler(commands=['status'])
-async def status_command(message: types.Message):
-    if check_user(message.from_user.id):
-        await send_printer_status(silent = False)
-
-#command /actions. get actions
-@dp.message_handler(commands=['actions'])
-async def actions_command(message: types.Message):
-    if check_user(message.from_user.id):
-        await send_actions_keyboard(message.from_user.id)
-
-#echo all
-@dp.message_handler()
-async def echo(message: types.Message):
-    await message.answer(message.text + "\nYou ID: "+ str(message.from_user.id))
-
-#get printer status text
-async def get_printer_status_string():
-    photo_cation = 'Фото '
-    global print_file
-    connection_status = get_printer_connection_status()
-    msg = datetime.now().strftime('%d.%m.%Y %H:%M')+'\n'
-    if connection_status.success:
-        if connection_status.state in ['Closed','Offline']:
-            msg += '❌ Принтер выключен'
-            print('11111')
-        else:
-            msg += '✅ Принтер включен\n'
-            printer_state = get_printer_state()
-            if printer_state.success:
-                msg += '🔥Стол: ' + str_round(printer_state.data['temperature']['bed']['actual'])+'° / '+\
-                                    str_round(printer_state.data['temperature']['bed']['target'])+'° Δ'+\
-                                    str_round(printer_state.data['temperature']['bed']['offset'])+'°'+'\n'
-                msg += '🔥Экструдер: '+ str_round(printer_state.data['temperature']['tool0']['actual'])+'° / '+\
-                                        str_round(printer_state.data['temperature']['tool0']['target'])+'°? Δ'+\
-                                        str_round(printer_state.data['temperature']['tool0']['offset'])+'°'+'\n'
-                if ( (printer_state.data['state']['flags']['printing'] == True) or
-                (printer_state.data['state']['flags']['pausing'] == True) or
-                (printer_state.data['state']['flags']['paused'] == True) or
-                (printer_state.data['state']['flags']['resuming'] == True) or
-                (printer_state.data['state']['flags']['cancelling'] == True) ):
-                    #get job state if printing
-                    job_state = get_printer_job_state()
-                    if job_state.success:
-
-                        msg += '🖨Принтер '
-                        if printer_state.data['state']['flags']['printing']:
-                            msg += 'печатает'
-                        elif printer_state.data['state']['flags']['pausing']:
-                            msg += 'приостанавливает печать'
-                        elif printer_state.data['state']['flags']['paused']:
-                            msg += 'на паузе'
-                        elif printer_state.data['state']['flags']['resuming']:
-                            msg += 'возобновляет печать'
-                        elif printer_state.data['state']['flags']['cancelling']:
-                            msg += 'отменяет печать'
-                        msg += '\n'
-
-                        msg += '💾Файл: '+job_state.data['job']['file']['name']
-                        if print_file != None:
-                            if print_file.start_time != None:
-                                msg += '\n⏱ Печать начата: '+print_file.start_time.strftime('%d.%m.%Y %H:%M')
-                        if job_state.data['job']['estimatedPrintTime'] != None:
-                            msg += '\n⏱ Расчетное время печати: '+user_friendly_seconds(job_state.data['job']['estimatedPrintTime'])
-                        _z = get_current_z_pos_with_range(job_state.data['progress']['filepos'])
-
-                        if print_file != None:
-                            if _z[0] != -1:
-                                photo_cation ='Высота: '+str(round(_z[0],2)) + " / " +str(round(print_file.max_z_pos,2)) + "мм " +\
-                                    str(round(100*_z[0]/print_file.max_z_pos,1))+"% Осталось: "+str(round(print_file.max_z_pos-_z[0],2))+"мм"+\
-                                    "\n📚Слой "+str(_z[1]) + " / "+str(_z[2])+" "+str(round(100*_z[1]/_z[2],1))+"% Осталось: "+str(_z[2]-_z[1])
-                                if print_file.common_layer_time != None:
-                                    photo_cation += "\n⏱/📚Время на слой "+str(print_file.common_layer_time)
-                                msg += '\n🏔'+photo_cation
-                            else:
-                                msg += '\n🏔Высота Z ?'
-                        if job_state.data['job']['filament'] != None:
-                            msg += '\n⛓Израсходуется: '+str(round(job_state.data['job']['filament']['tool0']['length'],2))+' мм / '+str(round(job_state.data['job']['filament']['tool0']['volume'],2))+' см³'
-                        tempp = '\n🔄Прогресс: ' + str(job_state.data['progress']['filepos'])+' / ' +\
-                            str(job_state.data['job']['file']['size'])+' байт '+\
-                            str(round(job_state.data['progress']['completion'],2))+' %'
-                        photo_cation += tempp
-                        msg += tempp
-                        msg += '\n⏰ Время печати: '+user_friendly_seconds(job_state.data['progress']['printTime'])
-                        msg += '\n⏰ Осталось: '+user_friendly_seconds(job_state.data['progress']['printTimeLeft'])
-                        time_end = datetime.now() + timedelta(seconds = job_state.data['progress']['printTimeLeft'])
-                        msg += '\n⏰ Закончится: '+time_end.strftime('%d.%m.%Y %H:%M')
-                    else:
-                        msg += '🆘Ошибка получения данных о печати'
-            else:
-                msg += '🆘Ошибка получения данных о статусе'
-
-            add_info = get_additional_file_strings()
-            if add_info != None:
-                msg += '\n'+add_info
-
-            return [1,msg]
-
-        add_info = get_additional_file_strings()
-        if add_info != None:
-            msg += '\n'+add_info
-        return [1,msg]
-    else:
-        return [0,connection_status.errorCode]
-
-    return [-1,'']
 
 
-#send printer status
-async def send_printer_status(silent = False):
-    chat_id = config.get('main','admin')
-    status = await get_printer_status_string()
-    if status[0] == -1:
-        pass
-        await bot.send_message(chat_id, 'Подключение к OCTOPRINT не удалось', reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
-    elif status[0] == 0:
-        pass
-        await bot.send_message(chat_id, 'Ошибка получения статуса!\n Код ответа: '+status[1], reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
-    else:
-        #send message if all success
-        if  config.getint('printer','cam_count') > 0:
-            await send_photos(chat_id,silent,None)
-
-        await bot.send_message(chat_id, status[1], reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
-
-def get_image_path(path):
-    size = get_file_size(path)
-    if size <= 0:
-        return 'noimage.jpeg'
-    else:
-        return path
-
-async def send_photos(chat_id, silent = False, cap = None):
-    make_photo()
-    cam_count = config.getint('printer','cam_count')
-    print(f'Make photo from {cam_count} cameras')
-    if cam_count == 1:
-        with open(get_image_path('photo.jpg'), 'rb') as photo:
-            await bot.send_chat_action(chat_id, action = 'upload_photo')
-            await bot.send_photos(chat_id,photo, caption = cap, reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent_photos') )
-    else:
-        media = types.MediaGroup()
-        for c in range(1,cam_count+1):
-            print(f'Attach photo from #{c} camera')
-            media.attach_photo(types.InputFile(get_image_path('photo'+str(c)+'.jpg')), caption = cap if c == 1 else None)
-
-        await bot.send_chat_action(chat_id, action = 'upload_photo')
-
-        try:
-            await bot.send_media_group(chat_id,media, disable_notification = silent or config.getboolean('misc','silent') )
-        except Exception as e:
-            traceback.print_exc()
-            await bot.send_message(chat_id, "\nНе удалось отправить фото", reply_markup=get_show_keyboard_button(),\
-                disable_notification = silent or config.getboolean('misc','silent') )
-
-
-async def delete_last_msg():
-    global last_msg
-    if last_msg != None:
-        try:
-            await bot.delete_message(last_msg.chat.id,last_msg.message_id)
-        except:
-            pass
-        finally:
-            last_msg = None
 
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -633,32 +352,6 @@ async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typi
     if check_user(query.message.chat.id):
         await query.answer("выберите действие...")
         await start_command(query)
-
-async def send_actions_keyboard(chat_id):
-    kbd = types.InlineKeyboardMarkup().row(
-        types.InlineKeyboardButton('🌋Прогнать файл по высотам Z', callback_data=command_cb.new(action='kb_reparse_file'))
-        )
-    commands_data = get_printer_commands('core')
-    if commands_data.success:
-        add_kbd=[]
-        print(commands_data.data)
-        for command in commands_data.data:
-            add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=command_cb.new(action='action_core_'+command['action'])))
-        kbd.add(*add_kbd)
-
-    commands_data = get_printer_commands('custom')
-    if commands_data.success:
-        add_kbd=[]
-        print(commands_data.data)
-        for command in commands_data.data:
-            add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=command_cb.new(action='action_custom_'+command['action'])))
-        kbd.add(*add_kbd)
-
-    kbd.row(
-            types.InlineKeyboardButton('Назад', callback_data=command_cb.new(action='kb_show_keyboard')),
-        )
-    global last_msg
-    last_msg = await bot.send_message(chat_id,'Действия', reply_markup=kbd)
 
 
 #button "show actions"
@@ -835,7 +528,7 @@ async def callback_action_query(query: types.CallbackQuery):
                 print('execute command '+data[1]+' '+data[2])
             elif len(data) == 2 and data[1] == 'cancel':
                 await delete_last_msg()
-
+'''
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 def repeat(coro, loop):
@@ -843,10 +536,13 @@ def repeat(coro, loop):
     loop.call_later(10, repeat, coro, loop)
 
 if __name__ == '__main__':
-    parse_file_for_offsets('nullprint.gcode')
-    print(get_current_z_pos_with_range(297))
+
+    octobot = Octobot()
+
     loop = asyncio.get_event_loop()
     loop.call_later(10, repeat, update_printer_status, loop)
-    executor.start_polling(dp, skip_updates=True)
+
+    executor.start_polling(octobot.get_dispatcher(), skip_updates=True)
+
     print('Goodbye')
 
