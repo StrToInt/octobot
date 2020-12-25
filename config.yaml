@@ -8,6 +8,42 @@ misc:
   silent: false
   silent_photos: true
   silent_z_change: true
+  notify:
+    z_change:
+      enable: true
+      min_seconds: 10
+      min_mm: 0
+  status_items:
+    printer_status: true
+    hotbed_temp: true
+    hotbed_temp_target: true
+    hotbed_temp_delta: true
+    extruder_temp: true
+    extruder_temp_target: true
+    extruder_temp_delta: true
+    printing_status: true
+    print_file_name: true
+    time_print_start: true
+    time_print_calculated: true
+    height_current: true
+    height_max: true
+    height_percentage: true
+    height_left: true
+    layer_current: true
+    layer_max: true
+    layer_percentage: true
+    layer_left: true
+    layer_time:true
+    filament_calculated_length: true
+    filament_calculated_weight: true
+    filament_calculated_volume: true
+    byte_progress: true
+    byte_max: true
+    byte_percentage: true
+    time_print: true
+    time_print_left: true
+    time_print_end: true
+    additional_info: true
 printer:
   cam_count: 2
   cameras:
@@ -39,4 +75,8 @@ printer:
       type: shell_script_image
   extruders: 1
   max_z_finish: 230
-  stop_command: custom/shutdown
+system:
+  enable_system_commands: true
+  abort_button:
+    enable: true
+    command: custom/printer_off
