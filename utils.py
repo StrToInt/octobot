@@ -32,6 +32,7 @@ class Printer_State:
 
 class utils:
 
+    callback = CallbackData('id','action')  # post:<id>:<action>
 
     #parse file for Z offsets
     @staticmethod
@@ -355,19 +356,17 @@ class utils:
             return None
         return info
 
-
-    @staticmethod
-    def get_settings_keyboard():
+    def get_settings_keyboard(settings):
         command_cb = CallbackData('id','action')  # post:<id>:<action>
 
         return types.InlineKeyboardMarkup().row(
-            types.InlineKeyboardButton(get_smile_for_boolean(config.getboolean('misc','silent'))+' Беззвук', callback_data=command_cb.new(action='kb_silent_toggle'))
+            types.InlineKeyboardButton(utils.get_smile_for_boolean(settings.is_silent())+' Беззвук', callback_data=utils.callback.new(action='kb_silent_toggle'))
         ).row(
-            types.InlineKeyboardButton(get_smile_for_boolean(config.getboolean('misc','silent_photos'))+' Беззвук на фото', callback_data=command_cb.new(action='kb_photo_silent_toggle')),
+            types.InlineKeyboardButton(utils.get_smile_for_boolean(settings.is_silent_photos())+' Беззвук на фото', callback_data=utils.callback.new(action='kb_photo_silent_toggle')),
         ).row(
-            types.InlineKeyboardButton(get_smile_for_boolean(config.getboolean('misc','silent_z_change'))+' Беззвук на изменение Z', callback_data=command_cb.new(action='kb_z_silent_toggle')),
+            types.InlineKeyboardButton(utils.get_smile_for_boolean(settings.is_silent_z_change())+' Беззвук на изменение Z', callback_data=utils.callback.new(action='kb_z_silent_toggle')),
         ).row(
-            types.InlineKeyboardButton('Назад', callback_data=command_cb.new(action='kb_show_keyboard')),
+            types.InlineKeyboardButton('Назад', callback_data=utils.callback.new(action='kb_show_keyboard')),
         )
 
     @staticmethod
@@ -375,7 +374,7 @@ class utils:
         command_cb = CallbackData('id','action')  # post:<id>:<action>
 
         return types.InlineKeyboardMarkup().row(
-            types.InlineKeyboardButton('⌨️Показать клавиатуру', callback_data=command_cb.new(action='kb_show_keyboard')),
+            types.InlineKeyboardButton('⌨️Показать клавиатуру', callback_data=utils.callback.new(action='kb_show_keyboard')),
         )
 
     @staticmethod
