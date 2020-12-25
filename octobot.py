@@ -34,7 +34,7 @@ class Octobot:
 
 
         self.__command_cb = CallbackData('id','action')
-        self.__settings = OctobotSettings('config.yaml')
+        self.__settings = OctobotSettings('config.yaml').reload()
         self.__bot = Bot(self.__settings.get_bot_token())
         self.__dispatcher = Dispatcher(self.__bot)
         self.__commands_module = OctobotCommands(self, self.__bot, self.__dispatcher, self.__settings)
@@ -50,42 +50,6 @@ class Octobot:
         return self.__settings
 
 
-    #boolean smile
-    def get_smile_for_boolean(self, inp):
-        return '✅' if inp == True else '❌'
-
-    #boolean on/off
-    def get_smile_for_boolean_str(self, inp):
-        return 'вкл' if inp == True else 'выкл'
-
-    def get_additional_file_strings(self):
-        info = ''
-
-        try:
-            with open('information.txt','r',encoding="utf-8") as fp:
-                line = fp.readline()
-                while line:
-                    info += line
-                    line = fp.readline()
-        except:
-            return None
-        return info
-
-    #get file size
-    @staticmethod
-    def get_file_size(path):
-        try:
-            return os.path.getsize(path)
-        except:
-            return -1
-
-    @staticmethod
-    def get_image_path(path):
-        size = get_file_size(path)
-        if size <= 0:
-            return 'noimage.jpeg'
-        else:
-            return path
 
     async def send_photos(self, chat_id, silent = False, cap = None):
         make_photo()
@@ -169,6 +133,29 @@ class Octobot:
         global last_msg
         last_msg = await bot.send_message(chat_id,'Действия', reply_markup=kbd)
 
+    async def send_information_about_job_action(self, information, silent = True):
+        await self.__bot.send_message(config.get('main','admin'),information)
+
+
+    #send printer status
+    async def send_printer_status(self, silent = False):
+        chat_id = str(self.__settings.get_admin())
+        status = utils.get_printer_status_string()
+        if status[0] == -1:
+            pass
+            await self.__bot.send_message(chat_id, 'Подключение к OCTOPRINT не удалось', reply_markup=get_show_keyboard_button(), disable_notification = silent or self.__settings.is_silent() )
+        elif status[0] == 0:
+            pass
+            await self.__bot.send_message(chat_id, 'Ошибка получения статуса!\n Код ответа: '+status[1], reply_markup=get_show_keyboard_button(), disable_notification = silent or self.__settings.is_silent() )
+        else:
+            #send message if all success
+            if  self.__settings.cameras_count() > 0:
+                pass
+                #await send_photos(chat_id,silent,None)
+
+            await self.__bot.send_message(chat_id, status[1], reply_markup=utils.get_show_keyboard_button(), disable_notification = silent or self.__settings.is_silent() )
+
+
 
 
 #config++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -204,50 +191,29 @@ def make_photo():
 
 
 
-def get_settings_keyboard():
-    return types.InlineKeyboardMarkup().row(
-        types.InlineKeyboardButton(get_smile_for_boolean(config.getboolean('misc','silent'))+' Беззвук', callback_data=command_cb.new(action='kb_silent_toggle'))
-    ).row(
-        types.InlineKeyboardButton(get_smile_for_boolean(config.getboolean('misc','silent_photos'))+' Беззвук на фото', callback_data=command_cb.new(action='kb_photo_silent_toggle')),
-    ).row(
-        types.InlineKeyboardButton(get_smile_for_boolean(config.getboolean('misc','silent_z_change'))+' Беззвук на изменение Z', callback_data=command_cb.new(action='kb_z_silent_toggle')),
-    ).row(
-        types.InlineKeyboardButton('Назад', callback_data=command_cb.new(action='kb_show_keyboard')),
-    )
-
-def get_show_keyboard_button():
-    return types.InlineKeyboardMarkup().row(
-        types.InlineKeyboardButton('⌨️Показать клавиатуру', callback_data=command_cb.new(action='kb_show_keyboard')),
-    )
-
-def user_friendly_seconds(n):
-    return str(timedelta(seconds = n,microseconds=0, milliseconds=0))
-
-def str_round(number):
-    return str(round(number,2))
 
 async def update_printer_status():
     current_state = ''
     global last_printer_state,print_file
     job_state = None
-    connection_status = get_printer_connection_status()
+    connection_status = utils.get_printer_connection_status()
     if connection_status.success:
         print('Printer status:' + connection_status.state)
         if connection_status.state == 'Closed':
             current_state = connection_status.state
         else:
-            printer_state = get_printer_state()
+            printer_state = utils.get_printer_state()
             if printer_state.success:
                 current_state = printer_state.data['state']['text']
 
-            job_state = get_printer_job_state()
+            job_state = utils.get_printer_job_state()
 
     #Operational
     if current_state == 'Operational':
         if last_printer_state in ('Closed','Connecting'):
             #printer connected
-            await send_information_about_job_action('⏩ Принтер подключен.')
-            await send_printer_status()
+            await octobot.send_information_about_job_action('⏩ Принтер подключен.')
+            await octobot.send_printer_status()
             print('Printer connected')
         elif last_printer_state in ('Printing','Pausing','Paused','Resuming','Cancelling','Finishing'):
             #print finished

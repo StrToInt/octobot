@@ -3,6 +3,10 @@ import subprocess
 import asyncio
 from datetime import datetime, timedelta
 from threading import Thread
+from dataclasses import dataclass
+import json
+from aiogram import types
+from aiogram.utils.callback_data import CallbackData
 
 @dataclass
 class Print_File_Data:
@@ -96,8 +100,14 @@ class utils:
 
     #get printer status
     @staticmethod
-    def get_printer_connection_status():
+    def get_printer_connection_status(testmode = True):
         status = Printer_Connection()
+        if testmode:
+            status.success = True
+            status.errorCode = 200
+            status.state = 'Operational'
+            return status
+
         try:
             r = requests.get(url = config.get("main", "octoprint")+'/api/connection', headers = {'X-Api-Key':config.get("main", "key")}, timeout=3)
             if r.status_code == 200:
@@ -114,8 +124,15 @@ class utils:
 
     #get printer state when connected
     @staticmethod
-    def get_printer_state():
+    def get_printer_state(testmode = True):
         state = Printer_State()
+
+        if testmode:
+            state.success = True
+            state.errorCode = 200
+            state.data = json.loads('{   "temperature": {     "tool0": {       "actual": 214.8821,       "target": 220.0,       "offset": 0     },     "tool1": {       "actual": 25.3,       "target": null,       "offset": 0     },     "bed": {       "actual": 50.221,       "target": 70.0,       "offset": 5     },     "history": [       {         "time": 1395651928,         "tool0": {           "actual": 214.8821,           "target": 220.0         },         "tool1": {           "actual": 25.3,           "target": null         },         "bed": {           "actual": 50.221,           "target": 70.0         }       },       {         "time": 1395651926,         "tool0": {           "actual": 212.32,           "target": 220.0         },         "tool1": {           "actual": 25.1,           "target": null         },         "bed": {           "actual": 49.1123,           "target": 70.0         }       }     ]   },   "sd": {     "ready": true   },   "state": {     "text": "Operational",     "flags": {       "operational": true,       "paused": false,       "printing": false,       "cancelling": false,  "resuming": false,       "pausing": false,       "sdReady": true,       "error": false,       "ready": true,       "closedOrError": false     }   } }')
+            return state
+
         try:
             r = requests.get(url = config.get("main", "octoprint")+'/api/printer', headers = {'X-Api-Key':config.get("main", "key")},timeout=3)
             if r.status_code == 200:
@@ -131,8 +148,15 @@ class utils:
 
     #get job state when printing
     @staticmethod
-    def get_printer_job_state():
+    def get_printer_job_state(testmode = True):
         job_state = Printer_State()
+
+        if testmode:
+            job_state.success = True
+            job_state.errorCode = 200
+            job_state.data = json.loads('{   "job": {     "file": {       "name": "whistle_v2.gcode",       "origin": "local",       "size": 1468987,       "date": 1378847754     },     "estimatedPrintTime": 8811,     "filament": {       "tool0": {         "length": 810,         "volume": 5.36       }     }   },   "progress": {     "completion": 0.2298468264184775,     "filepos": 337942,     "printTime": 276,     "printTimeLeft": 912   },   "state": "Printing" }')
+            return job_state
+
         try:
             r = requests.get(url = config.get("main", "octoprint")+'/api/job', headers = {'X-Api-Key':config.get("main", "key")},timeout=3)
             if r.status_code == 200:
@@ -153,7 +177,7 @@ class utils:
 
     #execute command
     @staticmethod
-    async def execute_command(path):
+    def execute_command(path):
         print('Execute command '+ '/api/system/commands/'+path)
         result = Printer_State()
         try:
@@ -172,7 +196,7 @@ class utils:
 
     #execute command
     @staticmethod
-    async def execute_job_command(command):
+    def execute_job_command(command):
         print('Execute job command: '+command)
         result = Printer_State()
         try:
@@ -190,7 +214,7 @@ class utils:
 
     #execute gcode
     @staticmethod
-    async def execute_gcode(commands):
+    def execute_gcode(commands):
         print('Execute gcode command: '+command)
         result = Printer_State()
         try:
@@ -227,10 +251,10 @@ class utils:
 
     #get printer status text
     @staticmethod
-    async def get_printer_status_string(self):
+    def get_printer_status_string():
         photo_cation = 'Фото '
         global print_file
-        connection_status = get_printer_connection_status()
+        connection_status = utils.get_printer_connection_status()
         msg = datetime.now().strftime('%d.%m.%Y %H:%M')+'\n'
         if connection_status.success:
             if connection_status.state in ['Closed','Offline']:
@@ -238,21 +262,21 @@ class utils:
                 print('11111')
             else:
                 msg += '✅ Принтер включен\n'
-                printer_state = get_printer_state()
+                printer_state = utils.get_printer_state()
                 if printer_state.success:
-                    msg += '🔥Стол: ' + str_round(printer_state.data['temperature']['bed']['actual'])+'° / '+\
-                                        str_round(printer_state.data['temperature']['bed']['target'])+'° Δ'+\
-                                        str_round(printer_state.data['temperature']['bed']['offset'])+'°'+'\n'
-                    msg += '🔥Экструдер: '+ str_round(printer_state.data['temperature']['tool0']['actual'])+'° / '+\
-                                            str_round(printer_state.data['temperature']['tool0']['target'])+'°? Δ'+\
-                                            str_round(printer_state.data['temperature']['tool0']['offset'])+'°'+'\n'
+                    msg += '🔥Стол: ' + utils.str_round(printer_state.data['temperature']['bed']['actual'])+'° / '+\
+                                        utils.str_round(printer_state.data['temperature']['bed']['target'])+'° Δ'+\
+                                        utils.str_round(printer_state.data['temperature']['bed']['offset'])+'°'+'\n'
+                    msg += '🔥Экструдер: '+ utils.str_round(printer_state.data['temperature']['tool0']['actual'])+'° / '+\
+                                            utils.str_round(printer_state.data['temperature']['tool0']['target'])+'°? Δ'+\
+                                            utils.str_round(printer_state.data['temperature']['tool0']['offset'])+'°'+'\n'
                     if ( (printer_state.data['state']['flags']['printing'] == True) or
                     (printer_state.data['state']['flags']['pausing'] == True) or
                     (printer_state.data['state']['flags']['paused'] == True) or
                     (printer_state.data['state']['flags']['resuming'] == True) or
                     (printer_state.data['state']['flags']['cancelling'] == True) ):
                         #get job state if printing
-                        job_state = get_printer_job_state()
+                        job_state = utils.get_printer_job_state()
                         if job_state.success:
 
                             msg += '🖨Принтер '
@@ -273,8 +297,8 @@ class utils:
                                 if print_file.start_time != None:
                                     msg += '\n⏱ Печать начата: '+print_file.start_time.strftime('%d.%m.%Y %H:%M')
                             if job_state.data['job']['estimatedPrintTime'] != None:
-                                msg += '\n⏱ Расчетное время печати: '+user_friendly_seconds(job_state.data['job']['estimatedPrintTime'])
-                            _z = get_current_z_pos_with_range(job_state.data['progress']['filepos'])
+                                msg += '\n⏱ Расчетное время печати: '+utils.user_friendly_seconds(job_state.data['job']['estimatedPrintTime'])
+                            _z = utils.get_current_z_pos_with_range(job_state.data['progress']['filepos'])
 
                             if print_file != None:
                                 if _z[0] != -1:
@@ -293,8 +317,8 @@ class utils:
                                 str(round(job_state.data['progress']['completion'],2))+' %'
                             photo_cation += tempp
                             msg += tempp
-                            msg += '\n⏰ Время печати: '+user_friendly_seconds(job_state.data['progress']['printTime'])
-                            msg += '\n⏰ Осталось: '+user_friendly_seconds(job_state.data['progress']['printTimeLeft'])
+                            msg += '\n⏰ Время печати: '+utils.user_friendly_seconds(job_state.data['progress']['printTime'])
+                            msg += '\n⏰ Осталось: '+utils.user_friendly_seconds(job_state.data['progress']['printTimeLeft'])
                             time_end = datetime.now() + timedelta(seconds = job_state.data['progress']['printTimeLeft'])
                             msg += '\n⏰ Закончится: '+time_end.strftime('%d.%m.%Y %H:%M')
                         else:
@@ -302,13 +326,13 @@ class utils:
                 else:
                     msg += '🆘Ошибка получения данных о статусе'
 
-                add_info = get_additional_file_strings()
+                add_info = utils.get_additional_file_strings()
                 if add_info != None:
                     msg += '\n'+add_info
 
                 return [1,msg]
 
-            add_info = get_additional_file_strings()
+            add_info = utils.get_additional_file_strings()
             if add_info != None:
                 msg += '\n'+add_info
             return [1,msg]
@@ -316,3 +340,75 @@ class utils:
             return [0,connection_status.errorCode]
 
         return [-1,'']
+
+    @staticmethod
+    def get_additional_file_strings():
+        info = ''
+
+        try:
+            with open('information.txt','r',encoding="utf-8") as fp:
+                line = fp.readline()
+                while line:
+                    info += line
+                    line = fp.readline()
+        except:
+            return None
+        return info
+
+
+    @staticmethod
+    def get_settings_keyboard():
+        command_cb = CallbackData('id','action')  # post:<id>:<action>
+
+        return types.InlineKeyboardMarkup().row(
+            types.InlineKeyboardButton(get_smile_for_boolean(config.getboolean('misc','silent'))+' Беззвук', callback_data=command_cb.new(action='kb_silent_toggle'))
+        ).row(
+            types.InlineKeyboardButton(get_smile_for_boolean(config.getboolean('misc','silent_photos'))+' Беззвук на фото', callback_data=command_cb.new(action='kb_photo_silent_toggle')),
+        ).row(
+            types.InlineKeyboardButton(get_smile_for_boolean(config.getboolean('misc','silent_z_change'))+' Беззвук на изменение Z', callback_data=command_cb.new(action='kb_z_silent_toggle')),
+        ).row(
+            types.InlineKeyboardButton('Назад', callback_data=command_cb.new(action='kb_show_keyboard')),
+        )
+
+    @staticmethod
+    def get_show_keyboard_button():
+        command_cb = CallbackData('id','action')  # post:<id>:<action>
+
+        return types.InlineKeyboardMarkup().row(
+            types.InlineKeyboardButton('⌨️Показать клавиатуру', callback_data=command_cb.new(action='kb_show_keyboard')),
+        )
+
+    @staticmethod
+    def user_friendly_seconds(n):
+        return str(timedelta(seconds = n,microseconds=0, milliseconds=0))
+
+    @staticmethod
+    def str_round(number):
+        return str(round(number,2))
+
+
+    #boolean smile
+    @staticmethod
+    def get_smile_for_boolean(inp):
+        return '✅' if inp == True else '❌'
+
+    #boolean on/off
+    @staticmethod
+    def get_smile_for_boolean_str(inp):
+        return 'вкл' if inp == True else 'выкл'
+
+    #get file size
+    @staticmethod
+    def get_file_size(path):
+        try:
+            return os.path.getsize(path)
+        except:
+            return -1
+
+    @staticmethod
+    def get_image_path(path):
+        size = get_file_size(path)
+        if size <= 0:
+            return 'noimage.jpeg'
+        else:
+            return path

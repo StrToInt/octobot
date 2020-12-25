@@ -5,14 +5,14 @@ class OctobotSettings:
 
     def __init__(self, filepath):
         self.__filepath = filepath
-        self.reload()
 
     def reload(self):
         with open(self.__filepath) as f:
             self.__yaml_data = yaml.safe_load(f)
+        return self
 
     def save(self):
-        with open(self.__filepath, 'w') as f:
+        with open(self.filepath, 'w') as f:
             yaml.dump(self.__yaml_data, f, default_flow_style=False)
 
     def show_all(self):
@@ -36,6 +36,15 @@ class OctobotSettings:
     def is_silent(self):
         return self.__yaml_data['misc']['silent']
 
+    def get_cameras(self):
+        return self.__yaml_data['printer']['cameras']
+
+    def get_camera(self, number):
+        return self.__yaml_data['printer']['cameras'][number]
+
+    def cameras_count(self):
+        return len(self.__yaml_data['printer']['cameras'])
+
     def check_user(self, user_id):
         if str(user_id) == str(self.get_admin()):
             return True
@@ -44,4 +53,3 @@ class OctobotSettings:
 
 if __name__ == '__main__':
     s = OctobotSettings('config.yaml')
-    print(s.show_all())

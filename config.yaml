@@ -12,18 +12,28 @@ printer:
   cam_count: 2
   cameras:
   - Mi5:
+      name: Фронтальная
       photo_url: /photoaf.jpg
       ptz_controls: true
       type: android_ipwebcam
       url: http://192.168.1.75:5000
       video_url: /video
   - M2Mini:
+      name: Сверху
+      photo_url: /photoaf.jpg
+      ptz_controls: true
+      type: android_ipwebcam
+      url: http://192.168.1.159:5000
+      video_url: /video
+  - Z007:
+      name: Сбоку
       photo_url: /photoaf.jpg
       ptz_controls: true
       type: android_ipwebcam
       url: http://192.168.1.159:5000
       video_url: /video
   - usbcam:
+      name: Сопло
       file_path: usbcam.jpg
       script: photo.sh
       type: shell_script_image
