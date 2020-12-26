@@ -71,19 +71,9 @@ class OctobotButtons:
         @dispatcher.callback_query_handler(utils.callback.filter(action='kb_silent_toggle'))
         async def callback_silent_mode_toggle(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
             if self.check_user(query.message.chat.id):
-                val = not config.getboolean('misc','silent')
-                config.set('misc','silent', str(val))
-                config_write()
-                await query.answer("Режим беззвука: " + get_smile_for_boolean_str(val))
-
-        #button "silent photo mode toggle"
-        @dispatcher.callback_query_handler(utils.callback.filter(action='kb_photo_silent_toggle'))
-        async def callback_silent_photo_mode_toggle(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
-            if self.check_user(query.message.chat.id):
-                val = not config.getboolean('misc','silent_photos')
-                config.set('misc','silent_photos', str(val))
-                config_write()
-                await query.answer("Режим беззвука для фотографий: " + get_smile_for_boolean_str(val))
+                self.__settings.toggle_silent_z()
+                await query.answer("Режим беззвука: " + utils.get_smile_for_boolean_str(self.__settings.is_silent_z()))
+                self.__octobot.set_last_message(await self.__bot.send_message(query.message.chat.id,'Настройки', reply_markup=utils.get_settings_keyboard(self.__settings)))
 
         #button "silent z change toggle"
         @dispatcher.callback_query_handler(utils.callback.filter(action='kb_z_silent_toggle'))
@@ -92,6 +82,7 @@ class OctobotButtons:
                 val = not config.getboolean('misc','silent_z_change')
                 config.set('misc','silent_z_change', str(val))
                 config_write()
+                await self.__octobot.delete_last_msg()
                 await query.answer("Режим беззвука на изменение Z: " + get_smile_for_boolean_str(val))
 
         #button "reparse file"

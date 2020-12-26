@@ -40,11 +40,7 @@ misc:
         full_info: false
         #элементы статуса для отправки
         items: [printer_status, hotbed_temp, hotbed_temp_target, hotbed_temp_delta,
-<<<<<<< .merge_file_a04528
           extruder_temp, extruder_t emp_target, extruder_temp_delta, printing_status,
-=======
-          extruder_temp, extruder_temp_target, extruder_temp_delta, printing_status,
->>>>>>> .merge_file_a06164
           print_file_name, time_print_start, time_print_calculated, height_current,
           height_max, height_percentage, height_left, layer_current, layer_max, layer_percentage,
           layer_left, layer_time, filament_calculated_length, filament_calculated_weight,

@@ -123,14 +123,13 @@ class Octobot:
 
 
     async def delete_last_msg(self):
-        global last_msg
-        if last_msg != None:
+        if self.last_msg != None:
             try:
-                await bot.delete_message(last_msg.chat.id,last_msg.message_id)
+                await self.__bot.delete_message(self.last_msg.chat.id,self.last_msg.message_id)
             except:
                 pass
             finally:
-                last_msg = None
+                self.set_last_message(None)
 
 
     async def send_actions_keyboard(self, chat_id):

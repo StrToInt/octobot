@@ -362,9 +362,7 @@ class utils:
         return types.InlineKeyboardMarkup().row(
             types.InlineKeyboardButton(utils.get_smile_for_boolean(settings.is_silent())+' Беззвук', callback_data=utils.callback.new(action='kb_silent_toggle'))
         ).row(
-            types.InlineKeyboardButton(utils.get_smile_for_boolean(settings.is_silent_photos())+' Беззвук на фото', callback_data=utils.callback.new(action='kb_photo_silent_toggle')),
-        ).row(
-            types.InlineKeyboardButton(utils.get_smile_for_boolean(settings.is_silent_z_change())+' Беззвук на изменение Z', callback_data=utils.callback.new(action='kb_z_silent_toggle')),
+            types.InlineKeyboardButton(utils.get_smile_for_boolean(settings.is_silent_z())+' Беззвук на изменение Z', callback_data=utils.callback.new(action='kb_z_silent_toggle')),
         ).row(
             types.InlineKeyboardButton('Назад', callback_data=utils.callback.new(action='kb_show_keyboard')),
         )
