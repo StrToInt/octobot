@@ -1,19 +1,34 @@
-import yaml, pyaml
 from pprint import pprint
+import ruamel.yaml
+from ruamel.yaml import YAML
+import sys
+
+class YamlObject(YAML):
+    def __init__(self):
+        YAML.__init__(self)
+        self.default_flow_style = True
+        self.block_seq_indent = 0
+        self.indent = 2
+        self.allow_unicode = True
+        self.encoding = 'utf-8'
 
 class OctobotSettings:
 
+
     def __init__(self, filepath):
         self.__filepath = filepath
+        self.__yaml = YamlObject()
 
     def reload(self):
-        with open(self.__filepath) as f:
-            self.__yaml_data = yaml.load(f)
+        with open(self.__filepath, 'r', encoding="utf-8") as f:
+            self.__yaml_data = self.__yaml.load(f)
+        self.__yaml.dump(self.__yaml_data, sys.stdout)
         return self
 
     def save(self):
-        with open(self.filepath, 'w') as f:
-            yaml.dump(self.__yaml_data, f, default_flow_style=False)
+        with open(self.__filepath, 'w', encoding="utf-8") as f:
+            self.__yaml.dump(self.__yaml_data, f)
+        return self
 
     def show_all(self):
         return pyaml.dump(self.__yaml_data)
@@ -75,4 +90,4 @@ class OctobotSettings:
 
 
 if __name__ == '__main__':
-    s = OctobotSettings('config.yaml')
+    s = OctobotSettings('config.yaml').reload().save()

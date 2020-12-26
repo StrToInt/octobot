@@ -1,0 +1,142 @@
+main:
+    #номер ID админа
+    admin: 148861643
+    #путь к папке с файлами октопринта
+    filesdir:
+    #ключ для апи октопринта
+    key: 17D2725AF03C4F6999ED90B0ADFAD319
+    #url октопринта
+    octoprint: http://192.168.1.30:5000
+    #токен бота для телеграма
+    token: 1015881710:AAGKiE50pfMX6gUj30Mk-MTfgp1Hox724sU
+misc:
+    #уведомления по событиям
+    events:
+        #полная тишина отправки сообщений
+        full_silent: false
+        #уведомление на изменение слоя печати
+        z_change:
+            #включено ли это событие
+            enable: true
+            #безшумное сообщение
+            silent: true
+            #минимальный интервал отправки сообщения о смене слоя
+            min_seconds: 30
+            #минимальный интервал в мм по высоте на отправку сообщения
+            min_mm: 1
+            #отправка фотографий
+            photos:
+                #отправлять ли фотографии
+                enable: true
+                #отправлять ли с одной камеры
+                one_cam: true
+                #название камеры со списка камер
+                camera: M2Mini
+            #какая информация включена в сообщение
+            information:
+                #включена ли вообще отправка текстом информации
+                enable: true
+                #отправлять ли полную информацию
+                full_info: false
+                items: [
+                    printer_status,
+                    hotbed_temp,
+                    hotbed_temp_target,
+                    hotbed_temp_delta,
+                    extruder_temp,
+                    extruder_temp_target,
+                    extruder_temp_delta,
+                    printing_status,
+                    print_file_name,
+                    time_print_start,
+                    time_print_calculated,
+                    height_current,
+                    height_max,
+                    height_percentage,
+                    height_left,
+                    layer_current,
+                    layer_max,
+                    layer_percentage,
+                    layer_left,
+                    layer_time,
+                    filament_calculated_length,
+                    filament_calculated_weight,
+                    filament_calculated_volume,
+                    byte_progress,
+                    byte_max,
+                    byte_percentage,
+                    time_print,
+                    time_print_left,
+                    time_print_end,
+                    additional_info
+                ]
+                
+      
+    status_items:
+        printer_status: true
+        hotbed_temp: true
+        hotbed_temp_target: true
+        hotbed_temp_delta: true
+        extruder_temp: true
+        extruder_temp_target: true
+        extruder_temp_delta: true
+        printing_status: true
+        print_file_name: true
+        time_print_start: true
+        time_print_calculated: true
+        height_current: true
+        height_max: true
+        height_percentage: true
+        height_left: true
+        layer_current: true
+        layer_max: true
+        layer_percentage: true
+        layer_left: true
+        layer_time: true
+        filament_calculated_length: true
+        filament_calculated_weight: true
+        filament_calculated_volume: true
+        byte_progress: true
+        byte_max: true
+        byte_percentage: true
+        time_print: true
+        time_print_left: true
+        time_print_end: true
+        additional_info: true
+printer:
+    cam_count: 2
+    cameras:
+      - Mi5:
+            name: Фронтальная
+            photo_url: /photoaf.jpg
+            ptz_controls: true
+            type: android_ipwebcam
+            url: http://192.168.1.75:5000
+            video_url: /video
+      - M2Mini:
+            name: Сверху
+            photo_url: /photoaf.jpg
+            ptz_controls: true
+            type: android_ipwebcam
+            url: http://192.168.1.159:5000
+            video_url: /video
+      - Z007:
+            name: Сбоку
+            photo_url: /photoaf.jpg
+            ptz_controls: true
+            type: android_ipwebcam
+            url: http://192.168.1.159:5000
+            video_url: /video
+      - usbcam:
+            name: Сопло
+            file_path: usbcam.jpg
+            script: photo.sh
+            type: shell_script_image
+    extruders: 1
+    max_z_finish: 230
+    cooldown_hotbed_temp: 50
+system:
+    enable_system_commands: true
+    abort_button:
+        enable: true
+        command: custom/printer_off
