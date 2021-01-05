@@ -33,6 +33,7 @@ class OctobotButtons:
         @dispatcher.callback_query_handler(utils.callback.filter(action='kb_show_keyboard'))
         async def callback_show_keyboard(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
             if self.check_user(query.message.chat.id):
+                await self.__octobot.delete_last_msg(query.message)
                 await query.answer("выберите действие...")
                 await self.__octobot.get_commands().show_start_keyboard(query)
 
@@ -42,6 +43,7 @@ class OctobotButtons:
         async def callback_show_actions_keyboard(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
             if self.check_user(query.message.chat.id):
                 await query.answer("выберите действие...")
+                await self.__octobot.delete_last_msg(query.message)
                 await self.__octobot.send_actions_keyboard(query.message.chat.id)
 
         #button "show settings"
@@ -49,6 +51,7 @@ class OctobotButtons:
         async def callback_show_settings(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
             if self.check_user(query.message.chat.id):
                 await query.answer("Настройки")
+                await self.__octobot.delete_last_msg(query.message)
                 self.__octobot.set_last_message(await self.__bot.send_message(query.message.chat.id,'Настройки', reply_markup=utils.get_settings_keyboard(self.__settings)))
 
         #button "print"
@@ -65,25 +68,25 @@ class OctobotButtons:
                 ).row(
                     types.InlineKeyboardButton('🖋Кастомная команда', callback_data=utils.callback.new(action='kb_print_start'))
                 )
-                await bot.send_message(query.message.chat.id,'Настройки', reply_markup=kbd)
+                self.__octobot.set_last_message((await bot.send_message(query.message.chat.id,'Настройки', reply_markup=kbd)))
 
         #button "silent mode toggle"
         @dispatcher.callback_query_handler(utils.callback.filter(action='kb_silent_toggle'))
         async def callback_silent_mode_toggle(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
             if self.check_user(query.message.chat.id):
-                self.__settings.toggle_silent_z()
+                self.__settings.toggle_silent()
                 await query.answer("Режим беззвука: " + utils.get_smile_for_boolean_str(self.__settings.is_silent_z()))
+                await self.__octobot.delete_last_msg(query.message)
                 self.__octobot.set_last_message(await self.__bot.send_message(query.message.chat.id,'Настройки', reply_markup=utils.get_settings_keyboard(self.__settings)))
 
         #button "silent z change toggle"
         @dispatcher.callback_query_handler(utils.callback.filter(action='kb_z_silent_toggle'))
         async def callback_silent_z_change_toggle(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
             if self.check_user(query.message.chat.id):
-                val = not config.getboolean('misc','silent_z_change')
-                config.set('misc','silent_z_change', str(val))
-                config_write()
-                await self.__octobot.delete_last_msg()
-                await query.answer("Режим беззвука на изменение Z: " + get_smile_for_boolean_str(val))
+                val = self.__settings.toggle_silent_z()
+                await self.__octobot.delete_last_msg(query.message)
+                await query.answer("Режим беззвука на изменение Z: " + utils.get_smile_for_boolean_str(val))
+                self.__octobot.set_last_message(await self.__bot.send_message(query.message.chat.id,'Настройки', reply_markup=utils.get_settings_keyboard(self.__settings)))
 
         #button "reparse file"
         @dispatcher.callback_query_handler(utils.callback.filter(action='kb_reparse_file'))
@@ -102,24 +105,29 @@ class OctobotButtons:
         async def callback_reparse_file(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
             if self.check_user(query.message.chat.id):
                 kbd = types.InlineKeyboardMarkup().row(
-                    types.InlineKeyboardButton('❌ Остановить', callback_data=utils.callback.new(action='kb_stop_stop')),
-                    types.InlineKeyboardButton('📛Выключить', callback_data=utils.callback.new(action='kb_stop_shutdown')),
-                    types.InlineKeyboardButton('❎ Продолжить', callback_data=utils.callback.new(action='kb_stop_cancel'))
+                        types.InlineKeyboardButton('📛Приостановить', callback_data=utils.callback.new(action='kb_stop_shutdown')),
+                        types.InlineKeyboardButton('❎ Продолжить', callback_data=utils.callback.new(action='kb_stop_resume')),
+                    ).row(
+                        types.InlineKeyboardButton('❌ Отменить', callback_data=utils.callback.new(action='kb_stop_stop')),
+                        types.InlineKeyboardButton('📛Выключить', callback_data=utils.callback.new(action='kb_stop_shutdown')),
+                    ).row(
+                        types.InlineKeyboardButton('Назад', callback_data=utils.callback.new(action='kb_show_keyboard')),
                     )
 
-                last_msg = await bot.send_message(query.message.chat.id,'Запрос на выполнение команды:\n"'+c['confirm']+'"', reply_markup=kbd)
+                await self.__octobot.delete_last_msg(query.message)
+                self.__octobot.set_last_message(await bot.send_message(query.message.chat.id,'Управление печатью:', reply_markup=kbd))
 
         #button "stop request"
         @dispatcher.callback_query_handler(utils.callback.filter(action='kb_stop_cancel'))
         async def callback_reparse_file(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
             if self.check_user(query.message.chat.id):
-                await delete_last_msg()
+                await self.__octobot.delete_last_msg(query.message)
 
         #button "stop request"
         @dispatcher.callback_query_handler(utils.callback.filter(action='kb_stop_stop'))
         async def callback_reparse_file(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
             if self.check_user(query.message.chat.id):
-                await delete_last_msg()
+                await self.__octobot.delete_last_msg(query.message)
                 await execute_gcode(['G91','G0 Z10'])
 
                 result = execute_job_command('cancel')
@@ -132,7 +140,7 @@ class OctobotButtons:
         @dispatcher.callback_query_handler(utils.callback.filter(action='kb_stop_shutdown'))
         async def callback_reparse_file(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
             if self.check_user(query.message.chat.id):
-                await delete_last_msg()
+                await self.__octobot.delete_last_msg(query.message)
                 await bot.send_message(query.message.chat.id,'Остановка принтера...')
                 result = execute_job_command(config.get("printer", "stop_command"))
 

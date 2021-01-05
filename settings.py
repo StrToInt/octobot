@@ -54,6 +54,7 @@ class OctobotSettings:
     def toggle_silent(self):
         self.__yaml_data['misc']['events']['full_silent'] = not self.__yaml_data['misc']['events']['full_silent']
         self.save()
+        return self.__yaml_data['misc']['events']['full_silent']
 
     def is_silent_z(self):
         return self.__yaml_data['misc']['events']['z_change']['silent']
@@ -61,6 +62,7 @@ class OctobotSettings:
     def toggle_silent_z(self):
         self.__yaml_data['misc']['events']['z_change']['silent'] = not self.__yaml_data['misc']['events']['z_change']['silent']
         self.save()
+        return self.__yaml_data['misc']['events']['z_change']['silent']
 
     def get_cameras(self):
         return self.__yaml_data['printer']['cameras']

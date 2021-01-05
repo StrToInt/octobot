@@ -15,7 +15,7 @@ class OctobotCommands:
         #command /start. show all menus
         @dispatcher.message_handler(commands=['start'])
         async def start_command(message: types.Message):
-            self.show_start_keyboard(message)
+            await self.show_start_keyboard(message)
 
         #command /photo. get photo
         @dispatcher.message_handler(commands=['photo'])
@@ -42,14 +42,14 @@ class OctobotCommands:
 
     async def show_start_keyboard(self, message):
         if self.check_user(message.from_user.id):
-            await self.__bot.send_message(message.from_user.id,'Выберите действие', reply_markup=self.get_main_keyboard())
+            self.__octobot.set_last_message(await self.__bot.send_message(message.from_user.id,'Выберите действие', reply_markup=self.get_main_keyboard()))
 
     def get_main_keyboard(self):
         return types.InlineKeyboardMarkup().row(
             types.InlineKeyboardButton('❔ Статус', callback_data=utils.callback.new(action='kb_status')),
             types.InlineKeyboardButton('📸Фото', callback_data=utils.callback.new(action='kb_photo')),
             types.InlineKeyboardButton('🖨Печать...', callback_data=utils.callback.new(action='kb_print')),
-        ).add(types.InlineKeyboardButton('📛STOP', callback_data=utils.callback.new(action='kb_stop_request'))).row(
+        ).add(types.InlineKeyboardButton('📛STOP...', callback_data=utils.callback.new(action='kb_stop_request'))).row(
             types.InlineKeyboardButton('� Настройки', callback_data=utils.callback.new(action='kb_show_settings')),
             types.InlineKeyboardButton(utils.get_smile_for_boolean(self.__settings.is_silent())+' Silent', callback_data=utils.callback.new(action='kb_silent_toggle')),
             types.InlineKeyboardButton('📲Действия', callback_data=utils.callback.new(action='kb_show_actions')),
