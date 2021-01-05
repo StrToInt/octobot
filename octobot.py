@@ -137,31 +137,31 @@ class Octobot:
 
     async def send_actions_keyboard(self, chat_id):
         kbd = types.InlineKeyboardMarkup().row(
-            types.InlineKeyboardButton('🌋Прогнать файл по высотам Z', callback_data=command_cb.new(action='kb_reparse_file'))
+            types.InlineKeyboardButton('🌋Прогнать файл по высотам Z', callback_data=utils.callback.new(action='kb_reparse_file'))
             )
-        commands_data = get_printer_commands('core')
+        commands_data = utils.get_printer_commands('core')
         if commands_data.success:
             add_kbd=[]
             print(commands_data.data)
             for command in commands_data.data:
-                add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=command_cb.new(action='action_core_'+command['action'])))
+                add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=utils.callback.new(action='action_core_'+command['action'])))
             kbd.add(*add_kbd)
 
-        commands_data = get_printer_commands('custom')
+        commands_data = utils.get_printer_commands('custom')
         if commands_data.success:
             add_kbd=[]
             print(commands_data.data)
             for command in commands_data.data:
-                add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=command_cb.new(action='action_custom_'+command['action'])))
+                add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=utils.callback.new(action='action_custom_'+command['action'])))
             kbd.add(*add_kbd)
 
         kbd.row(
-                types.InlineKeyboardButton('Назад', callback_data=command_cb.new(action='kb_show_keyboard')),
+                types.InlineKeyboardButton('Назад', callback_data=utils.callback.new(action='kb_show_keyboard')),
             )
-        global last_msg
-        last_msg = await bot.send_message(chat_id,'Действия', reply_markup=kbd)
+        await self.delete_last_msg()
+        self.set_last_message(await self.__bot.send_message(chat_id,'Действия', reply_markup=kbd))
 
-    async def send_information_about_job_action(self, information, silent = True):
+    async def send_information_about_job(self, information, silent = True):
         await self.__bot.send_message(config.get('main','admin'),information)
 
 

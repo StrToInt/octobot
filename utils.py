@@ -178,9 +178,15 @@ class utils:
 
     #execute command
     @staticmethod
-    def execute_command(path):
+    def execute_command(path, testmode = True):
         print('Execute command '+ '/api/system/commands/'+path)
         result = Printer_State()
+
+        if testmode:
+            result.success = True
+            result.errorCode = 204
+            return result
+
         try:
             r = requests.post(url = config.get("main", "octoprint")+'/api/system/commands/'+path, headers = {'X-Api-Key':config.get("main", "key")},timeout=8)
             if r.status_code == 204:
@@ -233,10 +239,18 @@ class utils:
 
     #get printer registered commands
     @staticmethod
-    def get_printer_commands(source = 'core'):
+    def get_printer_commands(source = 'core', testmode = True):
         printer_commands = Printer_State()
+
+        if testmode:
+            printer_commands.success = True
+            printer_commands.errorCode = 200
+            printer_commands.data = json.loads('[     {       "action": "shutdown",       "name": "Shutdown",       "confirm": "<strong>You are about to shutdown the system.",       "source": "core",       "resource": "http://example.com/api/system/commands/core/shutdown"     },     {       "action": "reboot",       "name": "Reboot",       "confirm": "<strong>You are about to reboot the system.om your printers internal storage).",       "source": "core",       "resource": "http://example.com/api/system/commands/core/reboot"     },     {       "action": "restart",       "name": "Restart OctoPrint",       "confirm": "<strong>You are about to restart the OctoPrint).",       "source": "core",       "resource": "http://example.com/api/system/commands/core/restart"     } ]')
+            return printer_commands
+
         try:
-            r = requests.get(url = config.get("main", "octoprint")+'/api/system/commands/'+source, headers = {'X-Api-Key':config.get("main", "key")},timeout=2)
+            r = requests.get(url = config.get("main", "octoprint")+'/api/system/commands/'+source, headers = {'X-Api-Key':config.get("main", "key")},timeout=5)
+
             if r.status_code == 200:
                 printer_commands.data = json.loads(r.text)
                 printer_commands.success = True

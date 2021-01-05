@@ -22,7 +22,7 @@ class OctobotSettings:
     def reload(self):
         with open(self.__filepath, 'r', encoding="utf-8") as f:
             self.__yaml_data = self.__yaml.load(f)
-        self.__yaml.dump(self.__yaml_data, sys.stdout)
+        #self.__yaml.dump(self.__yaml_data, sys.stdout)
         return self
 
     def save(self):

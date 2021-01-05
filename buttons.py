@@ -67,7 +67,10 @@ class OctobotButtons:
                     types.InlineKeyboardButton('❌ Отменить', callback_data=utils.callback.new(action='kb_print_start'))
                 ).row(
                     types.InlineKeyboardButton('🖋Кастомная команда', callback_data=utils.callback.new(action='kb_print_start'))
+                ).row(
+                    types.InlineKeyboardButton('Назад', callback_data=utils.callback.new(action='kb_show_keyboard')),
                 )
+
                 self.__octobot.set_last_message((await bot.send_message(query.message.chat.id,'Настройки', reply_markup=kbd)))
 
         #button "silent mode toggle"
@@ -105,9 +108,7 @@ class OctobotButtons:
         async def callback_reparse_file(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
             if self.check_user(query.message.chat.id):
                 kbd = types.InlineKeyboardMarkup().row(
-                        types.InlineKeyboardButton('📛Приостановить', callback_data=utils.callback.new(action='kb_stop_shutdown')),
-                        types.InlineKeyboardButton('❎ Продолжить', callback_data=utils.callback.new(action='kb_stop_resume')),
-                    ).row(
+                        types.InlineKeyboardButton('📛Пауза', callback_data=utils.callback.new(action='kb_stop_shutdown')),
                         types.InlineKeyboardButton('❌ Отменить', callback_data=utils.callback.new(action='kb_stop_stop')),
                         types.InlineKeyboardButton('📛Выключить', callback_data=utils.callback.new(action='kb_stop_shutdown')),
                     ).row(
@@ -152,7 +153,7 @@ class OctobotButtons:
                 source = None
                 command = None
 
-                global last_msg
+                await self.__octobot.delete_last_msg(query.message)
 
                 if query.data.startswith('id:action_core_'):
                     source = 'core'
@@ -163,27 +164,25 @@ class OctobotButtons:
                     command = query.data[len('id:action_custom_'):]
 
                 if source != None:
-                    commands_data = get_printer_commands(source)
+                    commands_data = utils.get_printer_commands(source)
                     for c in commands_data.data:
                         if c['action'] == command:
                             if 'confirm' in c:
                                 kbd = types.InlineKeyboardMarkup().row(
-                                    types.InlineKeyboardButton('Выполнить', callback_data=command_cb.new(action='actionexecute|'+source+"|"+command)),
-                                    types.InlineKeyboardButton('Отменить', callback_data=command_cb.new(action='actionexecute|'+'cancel'))
+                                    types.InlineKeyboardButton('Выполнить', callback_data=utils.callback.new(action='actionexecute|'+source+"|"+command)),
+                                    types.InlineKeyboardButton('Отменить', callback_data=utils.callback.new(action='actionexecute|'+'cancel'))
                                     )
 
-                                await delete_last_msg()
-                                last_msg = await bot.send_message(query.message.chat.id,'Запрос на выполнение команды:\n"'+c['confirm']+'"', reply_markup=kbd)
+                                self.__octobot.set_last_message(await self.__bot.send_message(query.message.chat.id,'Запрос на выполнение команды:\n"'+c['confirm']+'"', reply_markup=kbd))
                                 print('confirmation for '+c['name']+" "+source+" "+command)
                                 return
                             else:
-                                await delete_last_msg()
                                 result = await execute_command(source+"/"+command)
 
                                 if result.success == True:
-                                    await bot.send_message(query.message.chat.id,"Команда "+c['name'] + " выполнена")
+                                    await self.__bot.send_message(query.message.chat.id,"Команда "+c['name'] + " выполнена")
                                 else:
-                                    await bot.send_message(query.message.chat.id,"Команда "+c['name']+' (' +source+"/"+command+ ") не выполнена\nКод ошибки:"+result.errorCode)
+                                    await self.__bot.send_message(query.message.chat.id,"Команда "+c['name']+' (' +source+"/"+command+ ") не выполнена\nКод ошибки:"+result.errorCode)
 
                                 print('execute command '+c['name']+" "+source+" "+command)
                                 return
@@ -193,23 +192,21 @@ class OctobotButtons:
         async def callback_action_query(query: types.CallbackQuery):
             if self.check_user(query.message.chat.id):
                 await query.answer()
-                global last_msg
+                await self.__octobot.delete_last_msg(query.message)
 
                 if query.data.startswith('id:actionexecute|'):
                     data = query.data.split('|')
                     print(data)
                     if len(data) == 3:
-                        await delete_last_msg()
-
-                        result = await execute_command(data[1]+'/'+data[2])
+                        result = utils.execute_command(data[1]+'/'+data[2])
 
                         if result.success == True:
-                            await bot.send_message(query.message.chat.id,"Команда "+data[1]+'/'+data[2] + " выполнена")
+                            await self.__bot.send_message(query.message.chat.id,"Команда "+data[1]+'/'+data[2] + " выполнена")
                         else:
-                            await bot.send_message(query.message.chat.id,"Команда "+data[1]+'/'+data[2] + " не выполнена\nКод ошибки:"+result.errorCode)
+                            await self.__bot.send_message(query.message.chat.id,"Команда "+data[1]+'/'+data[2] + " не выполнена\nКод ошибки:"+result.errorCode)
                         print('execute command '+data[1]+' '+data[2])
                     elif len(data) == 2 and data[1] == 'cancel':
-                        await delete_last_msg()
+                        pass
 
 
     def check_user(self, user_id):
