@@ -111,7 +111,7 @@ misc:
     time_print_end: true
     additional_info: true
 printer:
-  cam_count: 2
+  cam_count: 1
   cameras:
   - Mi5:
       name: Фронтальная

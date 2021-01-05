@@ -25,6 +25,12 @@ class OctobotSettings:
         #self.__yaml.dump(self.__yaml_data, sys.stdout)
         return self
 
+    def getOctoprintURL(self):
+        return self.__yaml_data['main']['octoprint']
+
+    def getOctoprintKEY(self):
+        return self.__yaml_data['main']['key']
+
     def save(self):
         with open(self.__filepath, 'w', encoding="utf-8") as f:
             self.__yaml.dump(self.__yaml_data, f)
@@ -37,7 +43,11 @@ class OctobotSettings:
         return self.__yaml_data['main']['admin']
 
     def get_files_dir(self):
-        return self.__yaml_data['main']['filesdir']
+        result = self.__yaml_data['main']['filesdir']
+        return result if result != None else ''
+
+    def get_max_z_finish(self):
+        return self.__yaml_data['printer']['max_z_finish']
 
     def get_api_key(self):
         return self.__yaml_data['main']['key']

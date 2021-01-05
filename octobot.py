@@ -7,7 +7,6 @@ import json
 import math
 import pprint
 import traceback
-import re
 import os
 from dataclasses import dataclass
 import subprocess
@@ -40,6 +39,7 @@ class Octobot:
         self.__commands = OctobotCommands(self, self.__bot, self.__dispatcher, self.__settings)
         self.__buttons = OctobotButtons(self, self.__bot, self.__dispatcher, self.__settings)
         self.__print_file = None
+        utils.update(self.__settings.getOctoprintURL(),self.__settings.getOctoprintKEY())
 
         self.last_printer_state = 'Closed'
         self.print_file: Print_File_Data = None
@@ -79,47 +79,134 @@ class Octobot:
 
     async def send_photos(self, chat_id, silent = False, cap = None):
         make_photo()
-        cam_count = config.getint('printer','cam_count')
+        cam_count = self.__settings.cameras_count()
         print(f'Make photo from {cam_count} cameras')
         if cam_count == 1:
-            with open(get_image_path('photo.jpg'), 'rb') as photo:
-                await bot.send_chat_action(chat_id, action = 'upload_photo')
-                await bot.send_photos(chat_id,photo, caption = cap, reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent_photos') )
+            with open(utils.get_image_path('photo.jpg'), 'rb') as photo:
+                await self.__bot.send_chat_action(chat_id, action = 'upload_photo')
+                await self.__bot.send_photos(chat_id,photo, caption = cap, reply_markup=get_show_keyboard_button(), disable_notification = silent or self.__settings.is_silent() )
         else:
             media = types.MediaGroup()
             for c in range(1,cam_count+1):
                 print(f'Attach photo from #{c} camera')
                 media.attach_photo(types.InputFile(utils.get_image_path('photo'+str(c)+'.jpg')), caption = cap if c == 1 else None)
 
-            await bot.send_chat_action(chat_id, action = 'upload_photo')
+            await self.__bot.send_chat_action(chat_id, action = 'upload_photo')
 
             try:
-                await bot.send_media_group(chat_id,media, disable_notification = silent or config.getboolean('misc','silent') )
+                await self.__bot.send_media_group(chat_id,media, disable_notification = silent or self.__settings.is_silent() )
             except Exception as e:
                 traceback.print_exc()
-                await bot.send_message(chat_id, "\nНе удалось отправить фото", reply_markup=get_show_keyboard_button(),\
-                    disable_notification = silent or config.getboolean('misc','silent') )
+                await self.__bot.send_message(chat_id, "\nНе удалось отправить фото", reply_markup=utils.get_show_keyboard_button(),\
+                    disable_notification = silent or __settings.is_silent() )
 
 
 
+    #get printer status text
+    def get_printer_status_string(self):
+        photo_cation = 'Фото '
+        global print_file
+        connection_status = utils.get_printer_connection_status()
+        msg = datetime.now().strftime('%d.%m.%Y %H:%M')+'\n'
+        if connection_status.success:
+            if connection_status.state in ['Closed','Offline']:
+                msg += '❌ Принтер выключен'
+                print('11111')
+            else:
+                msg += '✅ Принтер включен\n'
+                printer_state = utils.get_printer_state()
+                if printer_state.success:
+                    msg += '🔥Стол: ' + utils.str_round(printer_state.data['temperature']['bed']['actual'])+'° / '+\
+                                        utils.str_round(printer_state.data['temperature']['bed']['target'])+'° Δ'+\
+                                        utils.str_round(printer_state.data['temperature']['bed']['offset'])+'°'+'\n'
+                    msg += '🔥Экструдер: '+ utils.str_round(printer_state.data['temperature']['tool0']['actual'])+'° / '+\
+                                            utils.str_round(printer_state.data['temperature']['tool0']['target'])+'°? Δ'+\
+                                            utils.str_round(printer_state.data['temperature']['tool0']['offset'])+'°'+'\n'
+                    if ( (printer_state.data['state']['flags']['printing'] == True) or
+                    (printer_state.data['state']['flags']['pausing'] == True) or
+                    (printer_state.data['state']['flags']['paused'] == True) or
+                    (printer_state.data['state']['flags']['resuming'] == True) or
+                    (printer_state.data['state']['flags']['cancelling'] == True) ):
+                        #get job state if printing
+                        job_state = utils.get_printer_job_state()
+                        if job_state.success:
 
+                            msg += '🖨Принтер '
+                            if printer_state.data['state']['flags']['printing']:
+                                msg += 'печатает'
+                            elif printer_state.data['state']['flags']['pausing']:
+                                msg += 'приостанавливает печать'
+                            elif printer_state.data['state']['flags']['paused']:
+                                msg += 'на паузе'
+                            elif printer_state.data['state']['flags']['resuming']:
+                                msg += 'возобновляет печать'
+                            elif printer_state.data['state']['flags']['cancelling']:
+                                msg += 'отменяет печать'
+                            msg += '\n'
+
+                            msg += '💾Файл: '+job_state.data['job']['file']['name']
+                            if self.print_file != None:
+                                if self.print_file.start_time != None:
+                                    msg += '\n⏱ Печать начата: '+self.print_file.start_time.strftime('%d.%m.%Y %H:%M')
+                            if job_state.data['job']['estimatedPrintTime'] != None:
+                                msg += '\n⏱ Расчетное время печати: '+utils.user_friendly_seconds(job_state.data['job']['estimatedPrintTime'])
+                            _z = utils.get_current_z_pos_with_range(job_state.data['progress']['filepos'],self.print_file)
+
+                            if self.print_file != None:
+                                if _z[0] != -1:
+                                    photo_cation ='Высота: '+str(round(_z[0],2)) + " / " +str(round(self.print_file.max_z_pos,2)) + "мм " +\
+                                        str(round(100*_z[0]/self.print_file.max_z_pos,1))+"% Осталось: "+str(round(self.print_file.max_z_pos-_z[0],2))+"мм"+\
+                                        "\n📚Слой "+str(_z[1]) + " / "+str(_z[2])+" "+str(round(100*_z[1]/_z[2],1))+"% Осталось: "+str(_z[2]-_z[1])
+                                    if self.print_file.common_layer_time != None:
+                                        photo_cation += "\n⏱/📚Время на слой "+str(self.print_file.common_layer_time)
+                                    msg += '\n🏔'+photo_cation
+                                else:
+                                    msg += '\n🏔Высота Z ?'
+                            if job_state.data['job']['filament'] != None:
+                                msg += '\n⛓Израсходуется: '+str(round(job_state.data['job']['filament']['tool0']['length'],2))+' мм / '+str(round(job_state.data['job']['filament']['tool0']['volume'],2))+' см³'
+                            tempp = '\n🔄Прогресс: ' + str(job_state.data['progress']['filepos'])+' / ' +\
+                                str(job_state.data['job']['file']['size'])+' байт '+\
+                                str(round(job_state.data['progress']['completion'],2))+' %'
+                            photo_cation += tempp
+                            msg += tempp
+                            msg += '\n⏰ Время печати: '+utils.user_friendly_seconds(job_state.data['progress']['printTime'])
+                            msg += '\n⏰ Осталось: '+utils.user_friendly_seconds(job_state.data['progress']['printTimeLeft'])
+                            time_end = datetime.now() + timedelta(seconds = job_state.data['progress']['printTimeLeft'])
+                            msg += '\n⏰ Закончится: '+time_end.strftime('%d.%m.%Y %H:%M')
+                        else:
+                            msg += '🆘Ошибка получения данных о печати'
+                else:
+                    msg += '🆘Ошибка получения данных о статусе'
+
+                add_info = utils.get_additional_file_strings()
+                if add_info != None:
+                    msg += '\n'+add_info
+
+                return [1,msg]
+
+            add_info = utils.get_additional_file_strings()
+            if add_info != None:
+                msg += '\n'+add_info
+            return [1,msg]
+        else:
+            return [0,connection_status.errorCode]
+
+        return [-1,'']
 
     #send printer status
     async def send_printer_status(self, silent = False):
         chat_id = self.__settings.get_admin()
-        status = await self.get_printer_status_string()
+        status = self.get_printer_status_string()
         if status[0] == -1:
-            pass
-            await bot.send_message(chat_id, 'Подключение к OCTOPRINT не удалось', reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
+            await self.__bot.send_message(chat_id, 'Подключение к OCTOPRINT не удалось', reply_markup=get_show_keyboard_button(), disable_notification = silent or self.__settings.is_silent() )
         elif status[0] == 0:
-            pass
-            await bot.send_message(chat_id, 'Ошибка получения статуса!\n Код ответа: '+status[1], reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
+            await self.__bot.send_message(chat_id, 'Ошибка получения статуса!\n Код ответа: '+status[1], reply_markup=get_show_keyboard_button(), disable_notification = silent or self.__settings.is_silent() )
         else:
             #send message if all success
-            if  config.getint('printer','cam_count') > 0:
-                await send_photos(chat_id,silent,None)
+            if self.__settings.cameras_count() > 0:
+                await self.send_photos(chat_id,silent,None)
 
-            await bot.send_message(chat_id, status[1], reply_markup=get_show_keyboard_button(), disable_notification = silent or config.getboolean('misc','silent') )
+            await self.__bot.send_message(chat_id, status[1], reply_markup=utils.get_show_keyboard_button(), disable_notification = silent or self.__settings.is_silent() )
 
 
     async def delete_last_msg(self, message = None):
@@ -161,29 +248,6 @@ class Octobot:
         await self.delete_last_msg()
         self.set_last_message(await self.__bot.send_message(chat_id,'Действия', reply_markup=kbd))
 
-    async def send_information_about_job(self, information, silent = True):
-        await self.__bot.send_message(config.get('main','admin'),information)
-
-
-    #send printer status
-    async def send_printer_status(self, silent = False):
-        chat_id = str(self.__settings.get_admin())
-        status = utils.get_printer_status_string()
-        if status[0] == -1:
-            pass
-            await self.__bot.send_message(chat_id, 'Подключение к OCTOPRINT не удалось', reply_markup=get_show_keyboard_button(), disable_notification = silent or self.__settings.is_silent() )
-        elif status[0] == 0:
-            pass
-            await self.__bot.send_message(chat_id, 'Ошибка получения статуса!\n Код ответа: '+status[1], reply_markup=get_show_keyboard_button(), disable_notification = silent or self.__settings.is_silent() )
-        else:
-            #send message if all success
-            if  self.__settings.cameras_count() > 0:
-                pass
-                #await send_photos(chat_id,silent,None)
-
-            await self.__bot.send_message(chat_id, status[1], reply_markup=utils.get_show_keyboard_button(), disable_notification = silent or self.__settings.is_silent() )
-
-
     async def update_printer_status(self):
         current_state = ''
         job_state = None
@@ -203,13 +267,13 @@ class Octobot:
         if current_state == 'Operational':
             if self.last_printer_state in ('Closed','Connecting'):
                 #printer connected
-                await octobot.send_information_about_job_action('⏩ Принтер подключен.')
-                await octobot.send_printer_status()
+                await self.__bot.send_message(self.__settings.get_admin(), '⏩ Принтер подключен.', disable_notification = self.__settings.is_silent() )
+                await self.send_printer_status()
                 print('Printer connected')
             elif self.last_printer_state in ('Printing','Pausing','Paused','Resuming','Cancelling','Finishing'):
                 #print finished
-                await send_information_about_job_action('⏩ Печать завершена.')
-                await send_printer_status()
+                await self.__bot.send_message(self.__settings.get_admin(), '⏩ Печать завершена.', disable_notification = self.__settings.is_silent() )
+                await self.send_printer_status()
                 self.print_file = None
                 print('Print '+job_state.data['job']['file']['name']+' finished')
         #Closed
@@ -217,81 +281,57 @@ class Octobot:
             if self.last_printer_state != 'Closed':
                 #printer disconnected
                 self.print_file = None
-                await send_information_about_job_action('⏩ Принтер отключен')
+                await self.__bot.send_message(self.__settings.get_admin(), '⏩ Принтер отключен', disable_notification = self.__settings.is_silent() )
                 print('Printer disconnected')
         #Connecting
         elif current_state == 'Connecting':
             if self.last_printer_state == 'Closed':
                 #printer connecting
-                await send_information_about_job_action('⏩ Подключение к принтеру')
+                await self.__bot.send_message(self.__settings.get_admin(), '⏩ Подключение к принтеру', disable_notification = self.__settings.is_silent() )
                 print('Printer connecting')
         #Printing
         elif current_state == 'Printing':
             if self.last_printer_state == 'Printing':
                 #get current z progress
-                _z = get_current_z_pos(job_state.data['progress']['filepos'])
+                _z = utils.get_current_z_pos(job_state.data['progress']['filepos'],self.print_file)
                 if _z != self.print_file.last_z_pos:
                     if self.print_file.last_z_time != None:
                         self.print_file.common_layer_time = datetime.now() - self.print_file.last_z_time
                     self.print_file.last_z_time = datetime.now()
-                    await send_printer_status(silent = config.getboolean('misc','silent_z_change') )
+                    await self.send_printer_status(silent = self.__settings.is_silent_z() )
                 self.print_file.last_z_pos = _z
-                if (_z != -1):
-                    print('Printing '+job_state.data['job']['file']['name'] + " at "+str(_z))
             elif self.last_printer_state in ('Paused','Resuming','Pausing'):
                 #resumed printing file
-                await send_information_about_job_action('⏩ Печать продолжена.')
-                await send_printer_status()
-                if self.print_file == None:
-                    parse_file_for_offsets(job_state.data['job']['file']['name'])
-                print('Print '+job_state.data['job']['file']['name']+' resumed')
+                await self.__bot.send_message(self.__settings.get_admin(), '⏩ Печать продолжена.', disable_notification = self.__settings.is_silent() )
+                await self.send_printer_status()
             else: #if self.last_printer_state in ['Operational', 'Closed','Connecting']:
                 #start printing file
-                await send_information_about_job_action('⏩ Печать запущена. ')
-                await send_printer_status()
-                print('Start printing '+job_state.data['job']['file']['name'])
-                parse_file_for_offsets(job_state.data['job']['file']['name'])
+                await self.__bot.send_message(self.__settings.get_admin(), '⏩ Печать запущена. ', disable_notification = self.__settings.is_silent() )
+                await self.send_printer_status()
+                self.print_file = utils.parse_file_for_offsets(job_state.data['job']['file']['name'],self.__settings.get_files_dir(),self.__settings.get_max_z_finish())
         #Paused
         elif current_state == 'Paused':
             if self.last_printer_state in ('Pausing','Operational'):
                 #print paused
-                await send_information_about_job_action('⏩ Печать приостановлена.')
-                await send_printer_status()
-                if self.print_file == None:
-                    parse_file_for_offsets(job_state.data['job']['file']['name'])
-                print('Print '+job_state.data['job']['file']['name']+' paused')
+                await self.__bot.send_message(self.__settings.get_admin(), '⏩ Печать приостановлена.', disable_notification = self.__settings.is_silent() )
+                await self.send_printer_status()
         #Pausing
         elif current_state == 'Pausing':
             if self.last_printer_state != 'Pausing':
                 #print pausing
-                await send_information_about_job_action('⏩ Печать ставится на паузу.')
-                await send_printer_status()
-                if self.print_file == None:
-                    parse_file_for_offsets(job_state.data['job']['file']['name'])
-                print('Print '+job_state.data['job']['file']['name']+' pausing')
+                await self.__bot.send_message(self.__settings.get_admin(), '⏩ Печать ставится на паузу.', disable_notification = self.__settings.is_silent() )
+                await self.send_printer_status()
         #Cancelling
         elif current_state == 'Cancelling':
             if self.last_printer_state != 'Cancelling':
                 #print cancelling
-                await send_information_about_job_action('⏩ Печать отменяется.')
-                await send_printer_status()
-                print('Print '+job_state.data['job']['file']['name']+' cancelling')
+                await self.__bot.send_message(self.__settings.get_admin(), '⏩ Печать отменяется.', disable_notification = self.__settings.is_silent() )
+                await self.send_printer_status()
+        print('Last state: '+self.last_printer_state)
         self.last_printer_state = current_state
-
-    async def send_information_about_job_action(self,information, silent = True):
-        await self.__bot.send_message(str(self.__settings.get_admin()),information)
-
 
 #config++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-
-config = configparser.ConfigParser()
-config.read('config.ini')
-
-#writeconfig
-def config_write():
-    with open('config.ini', "w") as config_file:
-        config.write(config_file)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def make_photo():

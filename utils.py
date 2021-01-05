@@ -7,6 +7,8 @@ from dataclasses import dataclass
 import json
 from aiogram import types
 from aiogram.utils.callback_data import CallbackData
+import os
+import re
 
 @dataclass
 class Print_File_Data:
@@ -33,6 +35,14 @@ class Printer_State:
 class utils:
 
     callback = CallbackData('id','action')  # post:<id>:<action>
+    octoprint_url = ''
+    octoprint_key = ''
+
+    @staticmethod
+    def update(octoprint_url,octoprint_key):
+        utils.octoprint_url = octoprint_url
+        utils.octoprint_key = octoprint_key
+
 
     #parse file for Z offsets
     @staticmethod
@@ -68,16 +78,15 @@ class utils:
 
                     new_file_data.offsets.update({file_pos+len(res_text):res})
         new_file_data.max_z_pos = max_z
-        return new_file_data
         print(new_file_data.offsets)
         print('max_Z = '+str(max_z))
+        return new_file_data
 
 
 
     #get current Z pos from file with layers range
     @staticmethod
-    def get_current_z_pos_with_range(offset):
-        global print_file
+    def get_current_z_pos_with_range(offset, print_file):
         if print_file != None:
             #temp pos
             lastkey = None
@@ -91,8 +100,8 @@ class utils:
 
     #get current Z pos from file
     @staticmethod
-    def get_current_z_pos(offset):
-        return get_current_z_pos_with_range(offset)[0]
+    def get_current_z_pos(offset,print_file):
+        return utils.get_current_z_pos_with_range(offset,print_file)[0]
 
     #get z position as string with max and percentage
     @staticmethod
@@ -101,7 +110,7 @@ class utils:
 
     #get printer status
     @staticmethod
-    def get_printer_connection_status(testmode = True):
+    def get_printer_connection_status(testmode = False):
         status = Printer_Connection()
         if testmode:
             status.success = True
@@ -110,7 +119,7 @@ class utils:
             return status
 
         try:
-            r = requests.get(url = config.get("main", "octoprint")+'/api/connection', headers = {'X-Api-Key':config.get("main", "key")}, timeout=3)
+            r = requests.get(url = utils.octoprint_url+'/api/connection', headers = {'X-Api-Key':utils.octoprint_key}, timeout=3)
             if r.status_code == 200:
                 json_data = json.loads(r.text)
                 status.state = json_data['current']['state']
@@ -125,7 +134,7 @@ class utils:
 
     #get printer state when connected
     @staticmethod
-    def get_printer_state(testmode = True):
+    def get_printer_state(testmode = False):
         state = Printer_State()
 
         if testmode:
@@ -135,7 +144,7 @@ class utils:
             return state
 
         try:
-            r = requests.get(url = config.get("main", "octoprint")+'/api/printer', headers = {'X-Api-Key':config.get("main", "key")},timeout=3)
+            r = requests.get(url = utils.octoprint_url+'/api/printer', headers = {'X-Api-Key':utils.octoprint_key},timeout=3)
             if r.status_code == 200:
                 state.data = json.loads(r.text)
                 state.success = True
@@ -149,7 +158,7 @@ class utils:
 
     #get job state when printing
     @staticmethod
-    def get_printer_job_state(testmode = True):
+    def get_printer_job_state(testmode = False):
         job_state = Printer_State()
 
         if testmode:
@@ -159,7 +168,7 @@ class utils:
             return job_state
 
         try:
-            r = requests.get(url = config.get("main", "octoprint")+'/api/job', headers = {'X-Api-Key':config.get("main", "key")},timeout=3)
+            r = requests.get(url = utils.octoprint_url+'/api/job', headers = {'X-Api-Key':utils.octoprint_key},timeout=3)
             if r.status_code == 200:
                 job_state.data = json.loads(r.text)
                 if job_state.data['progress']['printTime'] == None:
@@ -178,7 +187,7 @@ class utils:
 
     #execute command
     @staticmethod
-    def execute_command(path, testmode = True):
+    def execute_command(path, testmode = False):
         print('Execute command '+ '/api/system/commands/'+path)
         result = Printer_State()
 
@@ -188,7 +197,7 @@ class utils:
             return result
 
         try:
-            r = requests.post(url = config.get("main", "octoprint")+'/api/system/commands/'+path, headers = {'X-Api-Key':config.get("main", "key")},timeout=8)
+            r = requests.post(url = utils.octoprint_url+'/api/system/commands/'+path, headers = {'X-Api-Key':utils.octoprint_key},timeout=8)
             if r.status_code == 204:
                 result.success = True
             else:
@@ -207,7 +216,7 @@ class utils:
         print('Execute job command: '+command)
         result = Printer_State()
         try:
-            r = requests.post(url = config.get("main", "octoprint")+'/job/command', json = {'command': command}, headers = {'X-Api-Key':config.get("main", "key")},timeout=8)
+            r = requests.post(url = utils.octoprint_url+'/job/command', json = {'command': command}, headers = {'X-Api-Key':utils.octoprint_key},timeout=8)
             if r.status_code == 204:
                 result.success = True
             else:
@@ -225,7 +234,7 @@ class utils:
         print('Execute gcode command: '+command)
         result = Printer_State()
         try:
-            r = requests.post(url = config.get("main", "octoprint")+'/api/printer/command',json = {'commands':commands}, headers = {'X-Api-Key':config.get("main", "key")},timeout=8)
+            r = requests.post(url = utils.octoprint_url+'/api/printer/command',json = {'commands':commands}, headers = {'X-Api-Key':utils.octoprint_key},timeout=8)
             if r.status_code == 204:
                 result.success = True
             else:
@@ -239,7 +248,7 @@ class utils:
 
     #get printer registered commands
     @staticmethod
-    def get_printer_commands(source = 'core', testmode = True):
+    def get_printer_commands(source = 'core', testmode = False):
         printer_commands = Printer_State()
 
         if testmode:
@@ -249,7 +258,7 @@ class utils:
             return printer_commands
 
         try:
-            r = requests.get(url = config.get("main", "octoprint")+'/api/system/commands/'+source, headers = {'X-Api-Key':config.get("main", "key")},timeout=5)
+            r = requests.get(url = utils.octoprint_url+'/api/system/commands/'+source, headers = {'X-Api-Key':utils.octoprint_key},timeout=5)
 
             if r.status_code == 200:
                 printer_commands.data = json.loads(r.text)
@@ -261,100 +270,6 @@ class utils:
             printer_commands.success = False
         finally:
             return printer_commands
-
-
-
-    #get printer status text
-    @staticmethod
-    def get_printer_status_string():
-        photo_cation = 'Фото '
-        global print_file
-        connection_status = utils.get_printer_connection_status()
-        msg = datetime.now().strftime('%d.%m.%Y %H:%M')+'\n'
-        if connection_status.success:
-            if connection_status.state in ['Closed','Offline']:
-                msg += '❌ Принтер выключен'
-                print('11111')
-            else:
-                msg += '✅ Принтер включен\n'
-                printer_state = utils.get_printer_state()
-                if printer_state.success:
-                    msg += '🔥Стол: ' + utils.str_round(printer_state.data['temperature']['bed']['actual'])+'° / '+\
-                                        utils.str_round(printer_state.data['temperature']['bed']['target'])+'° Δ'+\
-                                        utils.str_round(printer_state.data['temperature']['bed']['offset'])+'°'+'\n'
-                    msg += '🔥Экструдер: '+ utils.str_round(printer_state.data['temperature']['tool0']['actual'])+'° / '+\
-                                            utils.str_round(printer_state.data['temperature']['tool0']['target'])+'°? Δ'+\
-                                            utils.str_round(printer_state.data['temperature']['tool0']['offset'])+'°'+'\n'
-                    if ( (printer_state.data['state']['flags']['printing'] == True) or
-                    (printer_state.data['state']['flags']['pausing'] == True) or
-                    (printer_state.data['state']['flags']['paused'] == True) or
-                    (printer_state.data['state']['flags']['resuming'] == True) or
-                    (printer_state.data['state']['flags']['cancelling'] == True) ):
-                        #get job state if printing
-                        job_state = utils.get_printer_job_state()
-                        if job_state.success:
-
-                            msg += '🖨Принтер '
-                            if printer_state.data['state']['flags']['printing']:
-                                msg += 'печатает'
-                            elif printer_state.data['state']['flags']['pausing']:
-                                msg += 'приостанавливает печать'
-                            elif printer_state.data['state']['flags']['paused']:
-                                msg += 'на паузе'
-                            elif printer_state.data['state']['flags']['resuming']:
-                                msg += 'возобновляет печать'
-                            elif printer_state.data['state']['flags']['cancelling']:
-                                msg += 'отменяет печать'
-                            msg += '\n'
-
-                            msg += '💾Файл: '+job_state.data['job']['file']['name']
-                            if print_file != None:
-                                if print_file.start_time != None:
-                                    msg += '\n⏱ Печать начата: '+print_file.start_time.strftime('%d.%m.%Y %H:%M')
-                            if job_state.data['job']['estimatedPrintTime'] != None:
-                                msg += '\n⏱ Расчетное время печати: '+utils.user_friendly_seconds(job_state.data['job']['estimatedPrintTime'])
-                            _z = utils.get_current_z_pos_with_range(job_state.data['progress']['filepos'])
-
-                            if print_file != None:
-                                if _z[0] != -1:
-                                    photo_cation ='Высота: '+str(round(_z[0],2)) + " / " +str(round(print_file.max_z_pos,2)) + "мм " +\
-                                        str(round(100*_z[0]/print_file.max_z_pos,1))+"% Осталось: "+str(round(print_file.max_z_pos-_z[0],2))+"мм"+\
-                                        "\n📚Слой "+str(_z[1]) + " / "+str(_z[2])+" "+str(round(100*_z[1]/_z[2],1))+"% Осталось: "+str(_z[2]-_z[1])
-                                    if print_file.common_layer_time != None:
-                                        photo_cation += "\n⏱/📚Время на слой "+str(print_file.common_layer_time)
-                                    msg += '\n🏔'+photo_cation
-                                else:
-                                    msg += '\n🏔Высота Z ?'
-                            if job_state.data['job']['filament'] != None:
-                                msg += '\n⛓Израсходуется: '+str(round(job_state.data['job']['filament']['tool0']['length'],2))+' мм / '+str(round(job_state.data['job']['filament']['tool0']['volume'],2))+' см³'
-                            tempp = '\n🔄Прогресс: ' + str(job_state.data['progress']['filepos'])+' / ' +\
-                                str(job_state.data['job']['file']['size'])+' байт '+\
-                                str(round(job_state.data['progress']['completion'],2))+' %'
-                            photo_cation += tempp
-                            msg += tempp
-                            msg += '\n⏰ Время печати: '+utils.user_friendly_seconds(job_state.data['progress']['printTime'])
-                            msg += '\n⏰ Осталось: '+utils.user_friendly_seconds(job_state.data['progress']['printTimeLeft'])
-                            time_end = datetime.now() + timedelta(seconds = job_state.data['progress']['printTimeLeft'])
-                            msg += '\n⏰ Закончится: '+time_end.strftime('%d.%m.%Y %H:%M')
-                        else:
-                            msg += '🆘Ошибка получения данных о печати'
-                else:
-                    msg += '🆘Ошибка получения данных о статусе'
-
-                add_info = utils.get_additional_file_strings()
-                if add_info != None:
-                    msg += '\n'+add_info
-
-                return [1,msg]
-
-            add_info = utils.get_additional_file_strings()
-            if add_info != None:
-                msg += '\n'+add_info
-            return [1,msg]
-        else:
-            return [0,connection_status.errorCode]
-
-        return [-1,'']
 
     @staticmethod
     def get_additional_file_strings():
@@ -371,7 +286,6 @@ class utils:
         return info
 
     def get_settings_keyboard(settings):
-        command_cb = CallbackData('id','action')  # post:<id>:<action>
 
         return types.InlineKeyboardMarkup().row(
             types.InlineKeyboardButton(utils.get_smile_for_boolean(settings.is_silent())+' Беззвук', callback_data=utils.callback.new(action='kb_silent_toggle'))
@@ -383,7 +297,6 @@ class utils:
 
     @staticmethod
     def get_show_keyboard_button():
-        command_cb = CallbackData('id','action')  # post:<id>:<action>
 
         return types.InlineKeyboardMarkup().row(
             types.InlineKeyboardButton('⌨️Показать клавиатуру', callback_data=utils.callback.new(action='kb_show_keyboard')),
@@ -418,7 +331,7 @@ class utils:
 
     @staticmethod
     def get_image_path(path):
-        size = get_file_size(path)
+        size = utils.get_file_size(path)
         if size <= 0:
             return 'noimage.jpeg'
         else:
