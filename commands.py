@@ -29,6 +29,13 @@ class OctobotCommands:
             if self.check_user(message.from_user.id):
                 await self.__octobot.send_printer_status(silent = False)
 
+
+        #command /status. get status
+        @dispatcher.message_handler(commands=['statusonly'])
+        async def statusonly_command(message: types.Message):
+            if self.check_user(message.from_user.id):
+                await self.__octobot.send_printer_status(silent = False, onlystatus = True)
+
         #command /actions. get actions
         @dispatcher.message_handler(commands=['actions'])
         async def actions_command(message: types.Message):

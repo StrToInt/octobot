@@ -74,14 +74,14 @@ class OctobotSettings:
         self.save()
         return self.__yaml_data['misc']['events']['z_change']['silent']
 
-    def get_cameras(self):
-        return self.__yaml_data['printer']['cameras']
+    def is_photo_enabled(self):
+        return self.__yaml_data['printer']['photo']['enable']
 
-    def get_camera(self, number):
-        return self.__yaml_data['printer']['cameras'][number]
+    def get_photo_script(self):
+        return self.__yaml_data['printer']['photo']['script']
 
-    def cameras_count(self):
-        return len(self.__yaml_data['printer']['cameras'])
+    def get_photo_file(self):
+        return self.__yaml_data['printer']['photo']['file']
 
 
 

@@ -177,7 +177,7 @@ class OctobotButtons:
                                 print('confirmation for '+c['name']+" "+source+" "+command)
                                 return
                             else:
-                                result = await execute_command(source+"/"+command)
+                                result = utils.execute_command(source+"/"+command)
 
                                 if result.success == True:
                                     await self.__bot.send_message(query.message.chat.id,"Команда "+c['name'] + " выполнена")
@@ -206,7 +206,7 @@ class OctobotButtons:
                             await self.__bot.send_message(query.message.chat.id,"Команда "+data[1]+'/'+data[2] + " не выполнена\nКод ошибки:"+result.errorCode)
                         print('execute command '+data[1]+' '+data[2])
                     elif len(data) == 2 and data[1] == 'cancel':
-                        pass
+                        await self.__octobot.send_actions_keyboard(query.message.chat.id)
 
 
     def check_user(self, user_id):

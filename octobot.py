@@ -78,27 +78,16 @@ class Octobot:
 
 
     async def send_photos(self, chat_id, silent = False, cap = None):
-        make_photo()
-        cam_count = self.__settings.cameras_count()
-        print(f'Make photo from {cam_count} cameras')
-        if cam_count == 1:
-            with open(utils.get_image_path('photo.jpg'), 'rb') as photo:
-                await self.__bot.send_chat_action(chat_id, action = 'upload_photo')
-                await self.__bot.send_photos(chat_id,photo, caption = cap, reply_markup=get_show_keyboard_button(), disable_notification = silent or self.__settings.is_silent() )
-        else:
-            media = types.MediaGroup()
-            for c in range(1,cam_count+1):
-                print(f'Attach photo from #{c} camera')
-                media.attach_photo(types.InputFile(utils.get_image_path('photo'+str(c)+'.jpg')), caption = cap if c == 1 else None)
+        self.make_photo()
+        await self.__bot.send_chat_action(chat_id, action = 'upload_photo')
 
-            await self.__bot.send_chat_action(chat_id, action = 'upload_photo')
-
-            try:
-                await self.__bot.send_media_group(chat_id,media, disable_notification = silent or self.__settings.is_silent() )
-            except Exception as e:
-                traceback.print_exc()
-                await self.__bot.send_message(chat_id, "\nНе удалось отправить фото", reply_markup=utils.get_show_keyboard_button(),\
-                    disable_notification = silent or __settings.is_silent() )
+        try:
+            with open(utils.get_image_path(self.__settings.get_photo_file()), 'rb') as photo:
+                await self.__bot.send_photo(chat_id,photo, caption = cap, disable_notification = silent or self.__settings.is_silent(), reply_markup=utils.get_show_keyboard_button())
+        except Exception as e:
+            traceback.print_exc()
+            await self.__bot.send_message(chat_id, "\nНе удалось отправить фото\n"+cap, reply_markup=utils.get_show_keyboard_button(),\
+                disable_notification = silent or self.__settings.is_silent() )
 
 
 
@@ -194,7 +183,7 @@ class Octobot:
         return [-1,'']
 
     #send printer status
-    async def send_printer_status(self, silent = False):
+    async def send_printer_status(self, silent = False, onlystatus = False):
         chat_id = self.__settings.get_admin()
         status = self.get_printer_status_string()
         if status[0] == -1:
@@ -203,10 +192,10 @@ class Octobot:
             await self.__bot.send_message(chat_id, 'Ошибка получения статуса!\n Код ответа: '+status[1], reply_markup=get_show_keyboard_button(), disable_notification = silent or self.__settings.is_silent() )
         else:
             #send message if all success
-            if self.__settings.cameras_count() > 0:
-                await self.send_photos(chat_id,silent,None)
-
-            await self.__bot.send_message(chat_id, status[1], reply_markup=utils.get_show_keyboard_button(), disable_notification = silent or self.__settings.is_silent() )
+            if (self.__settings.is_photo_enabled() and onlystatus == False):
+                await self.send_photos(chat_id,silent,status[1])
+            else:
+                await self.__bot.send_message(chat_id, status[1], reply_markup=utils.get_show_keyboard_button(), disable_notification = silent or self.__settings.is_silent() )
 
 
     async def delete_last_msg(self, message = None):
@@ -330,12 +319,12 @@ class Octobot:
         print('Last state: '+self.last_printer_state)
         self.last_printer_state = current_state
 
-#config++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    #config++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def make_photo():
-    subprocess.call("bash photo.sh", shell=True)
+    #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    def make_photo(self):
+        subprocess.call(self.__settings.get_photo_script(), shell=True)
 
 
 

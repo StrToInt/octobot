@@ -6,7 +6,7 @@ main:
   #ключ для апи октопринта
   key: 17D2725AF03C4F6999ED90B0ADFAD319
   #url октопринта
-  octoprint: http://192.168.1.30:5000
+  octoprint: http://127.0.0.1:5000
   #токен бота для телеграма
   token: 1015881710:AAGKiE50pfMX6gUj30Mk-MTfgp1Hox724sU
 misc:
@@ -58,12 +58,8 @@ misc:
       min_mm: 1
       #отправка фотографий
       photos:
-        #отправлять ли фотографии
+        #отправлять ли фотографию
         enable: true
-        #отправлять ли с одной камеры
-        one_cam: true
-        #название камеры со списка камер
-        camera: M2Mini
         #какая информация включена в сообщение
       information:
         #включена ли вообще отправка текстом информации
@@ -111,34 +107,10 @@ misc:
     time_print_end: true
     additional_info: true
 printer:
-  cam_count: 1
-  cameras:
-  - Mi5:
-      name: Фронтальная
-      photo_url: /photoaf.jpg
-      ptz_controls: true
-      type: android_ipwebcam
-      url: http://192.168.1.75:5000
-      video_url: /video
-  - M2Mini:
-      name: Сверху
-      photo_url: /photoaf.jpg
-      ptz_controls: true
-      type: android_ipwebcam
-      url: http://192.168.1.159:5000
-      video_url: /video
-  - Z007:
-      name: Сбоку
-      photo_url: /photoaf.jpg
-      ptz_controls: true
-      type: android_ipwebcam
-      url: http://192.168.1.159:5000
-      video_url: /video
-  - usbcam:
-      name: Сопло
-      file_path: usbcam.jpg
-      script: photo.sh
-      type: shell_script_image
+  photo:
+    enable: true
+    script: 'bash photo.sh'
+    file: 'photo.jpg'
   extruders: 1
   max_z_finish: 230
   cooldown_hotbed_temp: 50
