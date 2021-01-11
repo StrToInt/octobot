@@ -14,6 +14,7 @@ import re
 class Print_File_Data:
     start_time = None
     last_z_pos = -1.0
+    last_layer = -1.0
     max_z_pos = -1.0
     last_z_time = None
     common_layer_time = None
@@ -304,7 +305,7 @@ class utils:
 
     @staticmethod
     def user_friendly_seconds(n):
-        return str(timedelta(seconds = n,microseconds=0, milliseconds=0))
+        return str(timedelta(seconds = n,microseconds=0, milliseconds=0)).split('.')[0]
 
     @staticmethod
     def str_round(number):

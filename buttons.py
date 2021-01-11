@@ -107,8 +107,9 @@ class OctobotButtons:
         @dispatcher.callback_query_handler(utils.callback.filter(action='kb_stop_request'))
         async def callback_reparse_file(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
             if self.check_user(query.message.chat.id):
+                await self.__octobot.delete_last_msg(query.message)
                 kbd = types.InlineKeyboardMarkup().row(
-                        types.InlineKeyboardButton('📛Пауза', callback_data=utils.callback.new(action='kb_stop_shutdown')),
+                        types.InlineKeyboardButton('⏸ Пауза', callback_data=utils.callback.new(action='kb_stop_shutdown')),
                         types.InlineKeyboardButton('❌ Отменить', callback_data=utils.callback.new(action='kb_stop_stop')),
                         types.InlineKeyboardButton('📛Выключить', callback_data=utils.callback.new(action='kb_stop_shutdown')),
                     ).row(
@@ -116,7 +117,7 @@ class OctobotButtons:
                     )
 
                 await self.__octobot.delete_last_msg(query.message)
-                self.__octobot.set_last_message(await bot.send_message(query.message.chat.id,'Управление печатью:', reply_markup=kbd))
+                self.__octobot.set_last_message(await bot.send_message(query.message.chat.id,'Остановка принтера:', reply_markup=kbd))
 
         #button "stop request"
         @dispatcher.callback_query_handler(utils.callback.filter(action='kb_stop_cancel'))

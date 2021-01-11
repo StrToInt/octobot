@@ -96,7 +96,7 @@ class Octobot:
         photo_cation = 'Фото '
         global print_file
         connection_status = utils.get_printer_connection_status()
-        msg = datetime.now().strftime('%d.%m.%Y %H:%M')+'\n'
+        msg = datetime.now().strftime('%d.%m.%Y %H:%M:%S')+'\n'
         if connection_status.success:
             if connection_status.state in ['Closed','Offline']:
                 msg += '❌ Принтер выключен'
@@ -147,7 +147,7 @@ class Octobot:
                                         str(round(100*_z[0]/self.print_file.max_z_pos,1))+"% Осталось: "+str(round(self.print_file.max_z_pos-_z[0],2))+"мм"+\
                                         "\n📚Слой "+str(_z[1]) + " / "+str(_z[2])+" "+str(round(100*_z[1]/_z[2],1))+"% Осталось: "+str(_z[2]-_z[1])
                                     if self.print_file.common_layer_time != None:
-                                        photo_cation += "\n⏱/📚Время на слой "+str(self.print_file.common_layer_time)
+                                        photo_cation += "\n⏱/📚Время на слой "+str(self.print_file.common_layer_time).split('.')[0]
                                     msg += '\n🏔'+photo_cation
                                 else:
                                     msg += '\n🏔Высота Z ?'
@@ -240,6 +240,7 @@ class Octobot:
     async def update_printer_status(self):
         current_state = ''
         job_state = None
+        last_state = self.last_printer_state
         connection_status = utils.get_printer_connection_status()
         if connection_status.success:
             print('Printer status:' + connection_status.state)
@@ -252,14 +253,16 @@ class Octobot:
 
                 job_state = utils.get_printer_job_state()
 
+        self.last_printer_state = current_state
+        print('Last state: '+last_state)
         #Operational
         if current_state == 'Operational':
-            if self.last_printer_state in ('Closed','Connecting'):
+            if last_state in ('Closed','Connecting'):
                 #printer connected
                 await self.__bot.send_message(self.__settings.get_admin(), '⏩ Принтер подключен.', disable_notification = self.__settings.is_silent() )
                 await self.send_printer_status()
                 print('Printer connected')
-            elif self.last_printer_state in ('Printing','Pausing','Paused','Resuming','Cancelling','Finishing'):
+            elif last_state in ('Printing','Pausing','Paused','Resuming','Cancelling','Finishing'):
                 #print finished
                 await self.__bot.send_message(self.__settings.get_admin(), '⏩ Печать завершена.', disable_notification = self.__settings.is_silent() )
                 await self.send_printer_status()
@@ -267,57 +270,70 @@ class Octobot:
                 print('Print '+job_state.data['job']['file']['name']+' finished')
         #Closed
         if current_state == 'Closed':
-            if self.last_printer_state != 'Closed':
+            if last_state != 'Closed':
                 #printer disconnected
                 self.print_file = None
                 await self.__bot.send_message(self.__settings.get_admin(), '⏩ Принтер отключен', disable_notification = self.__settings.is_silent() )
                 print('Printer disconnected')
         #Connecting
         elif current_state == 'Connecting':
-            if self.last_printer_state == 'Closed':
+            if last_state == 'Closed':
                 #printer connecting
                 await self.__bot.send_message(self.__settings.get_admin(), '⏩ Подключение к принтеру', disable_notification = self.__settings.is_silent() )
                 print('Printer connecting')
         #Printing
         elif current_state == 'Printing':
-            if self.last_printer_state == 'Printing':
+            if last_state == 'Printing':
                 #get current z progress
-                _z = utils.get_current_z_pos(job_state.data['progress']['filepos'],self.print_file)
-                if _z != self.print_file.last_z_pos:
+                pos = utils.get_current_z_pos_with_range(job_state.data['progress']['filepos'],self.print_file)
+
+                _z = pos[0]
+                _layer = pos[1]
+
+                last_z = self.print_file.last_z_pos
+                last_layer = self.print_file.last_layer
+
+                self.print_file.last_z_pos = _z
+                self.print_file.last_layer = _layer
+
+                if _layer != last_layer:
                     if self.print_file.last_z_time != None:
-                        self.print_file.common_layer_time = datetime.now() - self.print_file.last_z_time
+                        layer_delta = _layer - last_layer
+                        seconds = datetime.now() - self.print_file.last_z_time
+                        seconds_per_layer = int(round(seconds.total_seconds() / layer_delta))
+                        print('seconds_per_layer: '+str(seconds_per_layer)+ " "+str(seconds)+ ' '+str(layer_delta))
+                        self.print_file.common_layer_time = timedelta(seconds = seconds_per_layer)
                     self.print_file.last_z_time = datetime.now()
                     await self.send_printer_status(silent = self.__settings.is_silent_z() )
-                self.print_file.last_z_pos = _z
-            elif self.last_printer_state in ('Paused','Resuming','Pausing'):
+                    print('printing at: layer '+str(_layer)+" z_pos: "+str(_z))
+
+            elif last_state in ('Paused','Resuming','Pausing'):
                 #resumed printing file
                 await self.__bot.send_message(self.__settings.get_admin(), '⏩ Печать продолжена.', disable_notification = self.__settings.is_silent() )
                 await self.send_printer_status()
-            else: #if self.last_printer_state in ['Operational', 'Closed','Connecting']:
+            else: #if last_state in ['Operational', 'Closed','Connecting']:
                 #start printing file
                 await self.__bot.send_message(self.__settings.get_admin(), '⏩ Печать запущена. ', disable_notification = self.__settings.is_silent() )
                 await self.send_printer_status()
                 self.print_file = utils.parse_file_for_offsets(job_state.data['job']['file']['name'],self.__settings.get_files_dir(),self.__settings.get_max_z_finish())
         #Paused
         elif current_state == 'Paused':
-            if self.last_printer_state in ('Pausing','Operational'):
+            if last_state in ('Pausing','Operational'):
                 #print paused
                 await self.__bot.send_message(self.__settings.get_admin(), '⏩ Печать приостановлена.', disable_notification = self.__settings.is_silent() )
                 await self.send_printer_status()
         #Pausing
         elif current_state == 'Pausing':
-            if self.last_printer_state != 'Pausing':
+            if last_state != 'Pausing':
                 #print pausing
                 await self.__bot.send_message(self.__settings.get_admin(), '⏩ Печать ставится на паузу.', disable_notification = self.__settings.is_silent() )
                 await self.send_printer_status()
         #Cancelling
         elif current_state == 'Cancelling':
-            if self.last_printer_state != 'Cancelling':
+            if last_state != 'Cancelling':
                 #print cancelling
                 await self.__bot.send_message(self.__settings.get_admin(), '⏩ Печать отменяется.', disable_notification = self.__settings.is_silent() )
                 await self.send_printer_status()
-        print('Last state: '+self.last_printer_state)
-        self.last_printer_state = current_state
 
     #config++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
