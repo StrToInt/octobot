@@ -111,7 +111,7 @@ class utils:
 
     #get printer status
     @staticmethod
-    def get_printer_connection_status(testmode = False):
+    def get_printer_connection_status(testmode = True):
         status = Printer_Connection()
         if testmode:
             status.success = True
@@ -135,7 +135,7 @@ class utils:
 
     #get printer state when connected
     @staticmethod
-    def get_printer_state(testmode = False):
+    def get_printer_state(testmode = True):
         state = Printer_State()
 
         if testmode:
@@ -159,7 +159,7 @@ class utils:
 
     #get job state when printing
     @staticmethod
-    def get_printer_job_state(testmode = False):
+    def get_printer_job_state(testmode = True):
         job_state = Printer_State()
 
         if testmode:
@@ -188,7 +188,7 @@ class utils:
 
     #execute command
     @staticmethod
-    def execute_command(path, testmode = False):
+    def execute_command(path, testmode = True):
         print('Execute command '+ '/api/system/commands/'+path)
         result = Printer_State()
 
@@ -210,29 +210,33 @@ class utils:
         finally:
             return result
 
-
-    #execute command
+    #connect printer
     @staticmethod
-    def execute_job_command(command):
-        print('Execute job command: '+command)
-        result = Printer_State()
+    def connect_printer(issue_connect = True, testmode = True):
+        status = Printer_Connection()
+        if testmode:
+            status.success = True
+            status.errorCode = 204
+            status.state = 'Operational'
+            return status
+
         try:
-            r = requests.post(url = utils.octoprint_url+'/job/command', json = {'command': command}, headers = {'X-Api-Key':utils.octoprint_key},timeout=8)
+            r = requests.post(url = utils.octoprint_url+'/api/connection', json = {'command': 'connect' if issue_connect else 'disconnect'}, headers = {'X-Api-Key':utils.octoprint_key},timeout=8)
             if r.status_code == 204:
-                result.success = True
+                status.success = True
             else:
-                result.errorCode = str(r.status_code)
-                result.success = False
+                status.errorCode = str(r.status_code)
+                status.success = False
         except Exception:
             traceback.print_exc()
-            result.success = False
+            status.success = False
         finally:
-            return result
+            return status
 
     #execute gcode
     @staticmethod
     def execute_gcode(commands):
-        print('Execute gcode command: '+command)
+        print('Execute gcode command: '+str(commands))
         result = Printer_State()
         try:
             r = requests.post(url = utils.octoprint_url+'/api/printer/command',json = {'commands':commands}, headers = {'X-Api-Key':utils.octoprint_key},timeout=8)
@@ -247,9 +251,27 @@ class utils:
         finally:
             return result
 
+    #issue job command
+    @staticmethod
+    def issue_job_command(command):
+        print('Issue job command: '+command)
+        result = Printer_State()
+        try:
+            r = requests.post(url = utils.octoprint_url+'/api/job',json = {'command':command}, headers = {'X-Api-Key':utils.octoprint_key},timeout=8)
+            if r.status_code == 204:
+                result.success = True
+            else:
+                result.errorCode = str(r.status_code)
+                result.success = False
+        except Exception:
+            traceback.print_exc()
+            result.success = False
+        finally:
+            return result
+
     #get printer registered commands
     @staticmethod
-    def get_printer_commands(source = 'core', testmode = False):
+    def get_printer_commands(source = 'core', testmode = True):
         printer_commands = Printer_State()
 
         if testmode:

@@ -86,6 +86,13 @@ class OctobotSettings:
     def get_cooldown_temp(self):
         return self.__yaml_data['printer']['photo']['file']
 
+    def is_abort_command_enabled(self):
+        return self.__yaml_data['system']['abort_button']['enable']
+
+    def get_abort_command(self):
+        return self.__yaml_data['system']['abort_button']['command']
+
+
 
 
 

@@ -105,14 +105,17 @@ class OctobotButtons:
 
         #button "stop request"
         @dispatcher.callback_query_handler(utils.callback.filter(action='kb_stop_request'))
-        async def callback_reparse_file(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+        async def callback_stop(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
             if self.check_user(query.message.chat.id):
                 await self.__octobot.delete_last_msg(query.message)
-                kbd = types.InlineKeyboardMarkup().row(
-                        types.InlineKeyboardButton('⏸ Пауза', callback_data=utils.callback.new(action='kb_stop_shutdown')),
-                        types.InlineKeyboardButton('❌ Отменить', callback_data=utils.callback.new(action='kb_stop_stop')),
-                        types.InlineKeyboardButton('📛Выключить', callback_data=utils.callback.new(action='kb_stop_shutdown')),
-                    ).row(
+                btns = [types.InlineKeyboardButton('⏸ Пауза', callback_data=utils.callback.new(action='kb_stop_pause')),
+                        types.InlineKeyboardButton('❌ Отменить', callback_data=utils.callback.new(action='kb_stop_stop_request'))]
+                if self.__settings.is_abort_command_enabled():
+                    btns.append(types.InlineKeyboardButton('📛Выключить', callback_data=utils.callback.new(action='kb_stop_shutdown_request')))
+
+                kbd = types.InlineKeyboardMarkup().row(*btns)
+
+                kbd.row(
                         types.InlineKeyboardButton('Назад', callback_data=utils.callback.new(action='kb_show_keyboard')),
                     )
 
@@ -120,31 +123,89 @@ class OctobotButtons:
                 self.__octobot.set_last_message(await bot.send_message(query.message.chat.id,'Остановка принтера:', reply_markup=kbd))
 
         #button "stop request"
-        @dispatcher.callback_query_handler(utils.callback.filter(action='kb_stop_cancel'))
-        async def callback_reparse_file(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+        @dispatcher.callback_query_handler(utils.callback.filter(action='kb_stop_pause'))
+        async def callback_stop(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
             if self.check_user(query.message.chat.id):
                 await self.__octobot.delete_last_msg(query.message)
+
+                result = utils.issue_job_command('pause')
+                if result.success:
+                    await bot.send_message(query.message.chat.id,'Команда выполнена: приостановить печать')
+                else:
+                    await bot.send_message(query.message.chat.id,'Не удалось приостановить печать,\nкод ошибки: '+result.errorCode)
+
+        #button "stop request"
+        @dispatcher.callback_query_handler(utils.callback.filter(action='kb_stop_stop_request'))
+        async def callback_stop(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+            if self.check_user(query.message.chat.id):
+                await self.__octobot.delete_last_msg(query.message)
+
+                kbd = types.InlineKeyboardMarkup().row(
+                    types.InlineKeyboardButton('Выполнить', callback_data=utils.callback.new(action='kb_stop_stop')),
+                    types.InlineKeyboardButton('Отменить', callback_data=utils.callback.new(action='kb_show_keyboard'))
+                    )
+                self.__octobot.set_last_message(await self.__bot.send_message(query.message.chat.id,'Отменить печать?', reply_markup=kbd))
+
+        #button "stop request"
+        @dispatcher.callback_query_handler(utils.callback.filter(action='kb_stop_shutdown_request'))
+        async def callback_stop(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+            if self.check_user(query.message.chat.id):
+                await self.__octobot.delete_last_msg(query.message)
+                kbd = types.InlineKeyboardMarkup().row(
+                    types.InlineKeyboardButton('Выполнить', callback_data=utils.callback.new(action='kb_stop_shutdown')),
+                    types.InlineKeyboardButton('Отменить', callback_data=utils.callback.new(action='kb_show_keyboard'))
+                    )
+                self.__octobot.set_last_message(await self.__bot.send_message(query.message.chat.id,'Экстренный стоп?', reply_markup=kbd))
 
         #button "stop request"
         @dispatcher.callback_query_handler(utils.callback.filter(action='kb_stop_stop'))
-        async def callback_reparse_file(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+        async def callback_stop(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
             if self.check_user(query.message.chat.id):
                 await self.__octobot.delete_last_msg(query.message)
-                await execute_gcode(['G91','G0 Z10'])
 
-                result = execute_job_command('cancel')
+                result = utils.issue_job_command('cancel')
+                utils.execute_gcode(['G91','G0 Z10','M84'])
+
                 if result.success:
-                    await bot.send_message(query.message.chat.id,'Остановка печати...')
+                    await bot.send_message(query.message.chat.id,'Команда выполнена: отменить печать')
                 else:
-                    await bot.send_message(query.message.chat.id,'Не удалось остановить печать,\nкод ошибки: '+result.errorCode)
+                    await bot.send_message(query.message.chat.id,'Не удалось отменить печать,\nкод ошибки: '+result.errorCode)
+
 
         #button "stop request"
         @dispatcher.callback_query_handler(utils.callback.filter(action='kb_stop_shutdown'))
-        async def callback_reparse_file(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+        async def callback_stop(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
             if self.check_user(query.message.chat.id):
                 await self.__octobot.delete_last_msg(query.message)
-                await bot.send_message(query.message.chat.id,'Остановка принтера...')
-                result = execute_job_command(config.get("printer", "stop_command"))
+
+                result = utils.execute_command(self.__settings.get_abort_command())
+
+                if result.success == True:
+                    await self.__bot.send_message(query.message.chat.id,"Остановка принтера...")
+                else:
+                    await self.__bot.send_message(query.message.chat.id,"Команда не выполнена\nКод ошибки:"+result.errorCode)
+
+        #button "connection"
+        @dispatcher.callback_query_handler(utils.callback.filter(action='kb_con_connect'))
+        async def callback_connection(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+            if self.check_user(query.message.chat.id):
+                await self.__octobot.delete_last_msg(query.message)
+                result = utils.connect_printer(issue_connect = True)
+                if result.success:
+                    await bot.send_message(query.message.chat.id,'Команда выполнена: Принтер подключен')
+                else:
+                    await bot.send_message(query.message.chat.id,'Не удалось подключиться,\nкод ошибки: '+result.errorCode)
+
+        #button "connection"
+        @dispatcher.callback_query_handler(utils.callback.filter(action='kb_con_disconnect'))
+        async def callback_connection(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+            if self.check_user(query.message.chat.id):
+                await self.__octobot.delete_last_msg(query.message)
+                result = utils.connect_printer(issue_connect = True)
+                if result.success:
+                    await bot.send_message(query.message.chat.id,'КОманда выполнена: Принтер отключен')
+                else:
+                    await bot.send_message(query.message.chat.id,'Не удалось отключиться,\nкод ошибки: '+result.errorCode)
 
         #action callback
         @dispatcher.callback_query_handler(text_contains='action_')

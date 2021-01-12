@@ -198,7 +198,7 @@ class Octobot:
         else:
             #send message if all success
             if (self.__settings.is_photo_enabled() and onlystatus == False):
-                await self.send_photos(chat_id,disable_notification = silent or self.__settings.is_silent() ,status[1])
+                await self.send_photos(chat_id,silent or self.__settings.is_silent() ,status[1])
             else:
                 await self.__bot.send_message(chat_id, status[1], reply_markup=utils.get_show_keyboard_button(), disable_notification = silent or self.__settings.is_silent() )
 
@@ -219,6 +219,11 @@ class Octobot:
     async def send_actions_keyboard(self, chat_id):
         kbd = types.InlineKeyboardMarkup().row(
             types.InlineKeyboardButton('🌋Прогнать файл по высотам Z', callback_data=utils.callback.new(action='kb_reparse_file'))
+            )
+
+        kbd.row(
+                types.InlineKeyboardButton('>> Подключить', callback_data=utils.callback.new(action='kb_con_connect')),
+                types.InlineKeyboardButton('>> Отключить', callback_data=utils.callback.new(action='kb_con_disconnect')),
             )
         commands_data = utils.get_printer_commands('core')
         if commands_data.success:
