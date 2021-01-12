@@ -60,6 +60,7 @@ class OctobotButtons:
         async def callback_print(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
             if self.check_user(query.message.chat.id):
                 await query.answer("Меню печати")
+                await self.__octobot.delete_last_msg(query.message)
                 kbd = types.InlineKeyboardMarkup().row(
                     types.InlineKeyboardButton('⏸ Начать', callback_data=utils.callback.new(action='kb_print_start')),
                     types.InlineKeyboardButton('⏯ Пауза', callback_data=utils.callback.new(action='kb_print_pause')),

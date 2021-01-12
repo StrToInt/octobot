@@ -111,7 +111,7 @@ class utils:
 
     #get printer status
     @staticmethod
-    def get_printer_connection_status(testmode = True):
+    def get_printer_connection_status(testmode = False):
         status = Printer_Connection()
         if testmode:
             status.success = True
@@ -135,7 +135,7 @@ class utils:
 
     #get printer state when connected
     @staticmethod
-    def get_printer_state(testmode = True):
+    def get_printer_state(testmode = False):
         state = Printer_State()
 
         if testmode:
@@ -159,7 +159,7 @@ class utils:
 
     #get job state when printing
     @staticmethod
-    def get_printer_job_state(testmode = True):
+    def get_printer_job_state(testmode = False):
         job_state = Printer_State()
 
         if testmode:
@@ -187,7 +187,7 @@ class utils:
 
     #get list files
     @staticmethod
-    def get_list_files(testmode = True):
+    def get_list_files(testmode = False):
         job_state = Printer_State()
 
         if testmode:
@@ -211,7 +211,7 @@ class utils:
 
     #execute command
     @staticmethod
-    def execute_command(path, testmode = True):
+    def execute_command(path, testmode = False):
         print('Execute command '+ '/api/system/commands/'+path)
         result = Printer_State()
 
@@ -235,7 +235,7 @@ class utils:
 
     #connect printer
     @staticmethod
-    def connect_printer(issue_connect = True, testmode = True):
+    def connect_printer(issue_connect = True, testmode = False):
         status = Printer_Connection()
         if testmode:
             status.success = True
@@ -294,7 +294,7 @@ class utils:
 
     #get printer registered commands
     @staticmethod
-    def get_printer_commands(source = 'core', testmode = True):
+    def get_printer_commands(source = 'core', testmode = False):
         printer_commands = Printer_State()
 
         if testmode:
