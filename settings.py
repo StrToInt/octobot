@@ -83,6 +83,9 @@ class OctobotSettings:
     def get_photo_file(self):
         return self.__yaml_data['printer']['photo']['file']
 
+    def get_cooldown_temp(self):
+        return self.__yaml_data['printer']['photo']['file']
+
 
 
 
