@@ -45,7 +45,6 @@ class Octobot:
         self.print_file: Print_File_Data = None
         self.last_msg = None
         self.cooldown_marker = False
-        self.last_bed_temp = -1.0
 
     def get_dispatcher(self):
         return self.__dispatcher
@@ -285,10 +284,12 @@ class Octobot:
             if self.__settings.get_cooldown_temp() != -1:
                 if printer_state.success:
                     bed_temp = printer_state.data['temperature']['bed']['actual']
-                    if self.last_bed_temp != -1:
-                        if bed_temp < self.last_bed_temp:
+                    if bed_temp < self.__settings.get_cooldown_temp():
+                        if not self.cooldown_marker:
+                            self.cooldown_marker = True
                             await self.send_printer_status(False, False, '🔴 #Печать завершена, стол охладился', connection_status, printer_state, job_state)
-                    self.last_bed_temp = bed_temp
+                    elif bed_temp > self.__settings.get_cooldown_temp():
+                            self.cooldown_marker = False
         #Closed
         if current_state == 'Closed':
             if last_state != 'Closed':
