@@ -238,8 +238,7 @@ class Octobot:
             add_kbd=[]
             print(commands_data.data)
             for command in commands_data.data:
-                add_kbd.append(types.InlineKeyboardButton(command['name'], callback_data=utils.callback.new(action='action_custom_'+command['action'])))
-            kbd.add(*add_kbd)
+                kbd.row(types.InlineKeyboardButton(command['name'], callback_data=utils.callback.new(action='action_custom_'+command['action'])))
 
         kbd.row(
                 types.InlineKeyboardButton('Назад', callback_data=utils.callback.new(action='kb_show_keyboard')),
