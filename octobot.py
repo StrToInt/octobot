@@ -287,7 +287,7 @@ class Octobot:
                     if bed_temp < self.__settings.get_cooldown_temp():
                         if not self.cooldown_marker:
                             self.cooldown_marker = True
-                            await self.send_printer_status(False, False, '🔴 #Печать завершена, стол охладился', connection_status, printer_state, job_state)
+                            await self.send_printer_status(False, False, '🔴 #Стол охладился', connection_status, printer_state, job_state)
                     elif bed_temp > self.__settings.get_cooldown_temp():
                             self.cooldown_marker = False
         #Closed
